@@ -1,0 +1,11 @@
+{
+    "GCL": {
+        "allowed_model": ["DGI", "GRACE", "MVGRL", "CCA-SSG", "BGRL", "Barlow", "SUGRL", "SFA", "AFGRL", "COSTA"],
+        "allowed_dataset": ["Planetoid"],
+        "DGI": {
+            "dataset_class": "PyGDataset",
+            "executor": "DGIExecutor",
+            "evaluator": "DGIEvaluator"
+        }
+    }
+}
