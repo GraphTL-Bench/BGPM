@@ -19,11 +19,12 @@ class PyGDataset(AbstractDataset):
     def _load_data(self):
         device = torch.device('cuda')
         path = osp.join(osp.expanduser('~'), 'datasets')
-        datasetModule = 'torch_geometric.datasets.{}'.format(self.datasetName)
-        pyg = getattr(importlib.import_module('torch_geometric.datasets'), '{}'.format(self.datasetName))
-        # pyg = importlib.import_module(datasetModule)
-        # pyg = importlib.import_module(self.datasetName, package='torch_geometric.datasets')
-        self.dataset = pyg(path, name='Cora', transform=T.NormalizeFeatures())
+
+        if self.datasetName in ["Cora", "CiteSeer", "PubMed"]:
+            pyg = getattr(importlib.import_module('torch_geometric.datasets'), 'Planetoid')
+        if self.datasetName in ["Computers", "Photo"]:
+            pyg = getattr(importlib.import_module('torch_geometric.datasets'), 'Amazon')
+        self.dataset = pyg(path, name=self.datasetName, transform=T.NormalizeFeatures())
         self.data = self.dataset[0].to(device)
         
     
