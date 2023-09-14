@@ -89,13 +89,14 @@ You can refer to my implementation in `libgptb/executors/DGI_executor.py`
 You may beed to add your task configuration in `libgptb/config/task_config.json`
 
 You can refer to my implementation in `libgptb/config/task_config.json` for DGI
-```
+```json
 "$YourModelName": {
             "dataset_class": "$YourDatasetName",
             "executor": "$YourExecutorName",
             "evaluator": "$YourEvaluatorName"
         }
-```json
+```
+
 These variables are what you imported in the above steps.
 Now everything should be ready for execution.
 
