@@ -6,6 +6,11 @@
             "dataset_class": "PyGDataset",
             "executor": "DGIExecutor",
             "evaluator": "DGIEvaluator"
+        },
+        "SUGRL": {
+            "dataset_class": "PyGDataset",
+            "executor": "SUGRLExecutor",
+            "evaluator": "SUGRLEvaluator"
         }
     }
 }
