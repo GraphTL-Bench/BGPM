@@ -102,6 +102,18 @@ Now everything should be ready for execution.
 
 ## The execution environment
 
+### 0.Docerfile_x86
+```
+FROM pytorch/pytorch:1.9.0-cuda11.1-cudnn8-devel
+COPY requirements.txt /opt
+RUN pip install torch-scatter==2.0.7 torch-sparse==0.6.10 torch-cluster==1.5.9 torch-spline-conv==1.2.1 torch-geometric==2.0 -f https://data.pyg.org/whl/torch-1.9.0+cu111.html\ 
+    && pip install tensorboard \
+    && pip install  dgl -f https://data.dgl.ai/wheels/cu113/repo.html \
+    && pip install  dglgo -f https://data.dgl.ai/wheels-test/repo.html
+RUN pip install -r /opt/requirements.txt
+ENV PATH=$PATH:/usr/local/cuda-11.1/bin LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/cuda-11.1/lib64:/usr/lib/x86_64-linux-gnu
+```
+
 ### 1. Requirements.txt
 
 ```
