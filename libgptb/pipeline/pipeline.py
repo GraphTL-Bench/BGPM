@@ -45,6 +45,7 @@ def run_model(task=None, model_name=None, dataset_name=None, config_file=None,
     train_data = data
     valid_data = data
     test_data = data
+  
     data_feature = dataset.get_data_feature()
     # load executor
     model_cache_file = './libgptb/cache/{}/model_cache/{}_{}.m'.format(

@@ -1,11 +1,16 @@
 {
     "GCL": {
-        "allowed_model": ["DGI", "GRACE", "MVGRL", "CCA-SSG", "BGRL", "Barlow", "SUGRL", "SFA", "AFGRL", "COSTA"],
+        "allowed_model": ["DGI", "GRACE", "MVGRL", "CCA", "BGRL", "Barlow", "SUGRL", "SFA", "AFGRL", "COSTA"],
         "allowed_dataset": ["Cora", "CiteSeer", "PubMed","Computers", "Photo"],
         "DGI": {
             "dataset_class": "PyGDataset",
             "executor": "DGIExecutor",
             "evaluator": "DGIEvaluator"
+        },
+        "CCA": {
+            "dataset_class": "DGLDataset",
+            "executor": "CCAExecutor",
+            "evaluator": "CCAEvaluator"
         }
     }
 }

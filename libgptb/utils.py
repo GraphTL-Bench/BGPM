@@ -22,6 +22,9 @@ def get_executor(config, model, data_feature):
     Returns:
         AbstractExecutor: the loaded executor
     """
+    # getattr(importlib.import_module('libgptb.executors'),
+    #                     config['executor'])(config, model, data_feature)
+
     try:
         return getattr(importlib.import_module('libgptb.executors'),
                        config['executor'])(config, model, data_feature)
