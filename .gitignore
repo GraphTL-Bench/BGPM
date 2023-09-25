@@ -1,0 +1,12 @@
+/.vscode
+/raw_data/*
+/visualized_data/*
+/libgptb/tmp/*
+/libgptb/cache/*
+/libgptb/__pycache__
+/libgptb/*/__pycache__
+/libgptb/data/dataset/__pycache__
+/.idea
+/libgptb/log/*
+/libgptb/model/*/__pycache__
+/libgptb/data/dataset/*/__pycache__
