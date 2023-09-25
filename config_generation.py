@@ -1,5 +1,6 @@
 import os
 import json
+import numpy as np
 from ray import tune
 
 def parse_search_space(space_file):
@@ -36,7 +37,7 @@ def parse_search_space(space_file):
                 elif paras_type == 'choice':
                     # name type list
                     try:
-                        search_space[name] = tune.choice(paras_dict[name]['list'])
+                        search_space[name] = np.random.choice(paras_dict[name]['list'])
                     except:
                         raise TypeError('The space file does not meet the format requirements,\
                             when parsing choice type.')
@@ -55,11 +56,26 @@ def parse_search_space(space_file):
             the config file is in the root dir and is a txt.'.format(space_file))
     return search_space
 
+class JsonEncoder(json.JSONEncoder):
+    """Convert numpy classes to JSON serializable objects."""
+
+    def default(self, obj):
+        if isinstance(obj, (np.integer, np.floating, np.bool_)):
+            return obj.item()
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        else:
+            return super(JsonEncoder, self).default(obj)
+        
 def main():
     space_file = 'hyper_example'
     for i in range(20):
         search_sapce = parse_search_space(space_file)
-        config_file = "config_{}.json".format(i)
+        # print(object(search_sapce))
+        config_file = "./config_{}.json".format(i)
         with open(config_file, "w") as w:
-            json.dump(search_sapce, w, ensure_ascii=False)
+            w.write(json.dumps(search_sapce,ensure_ascii=False, cls=JsonEncoder))
+            print("config_{} is generated".format(i))
 
+if __name__=="__main__":
+    main()
