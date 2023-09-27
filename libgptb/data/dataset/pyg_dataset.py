@@ -18,7 +18,7 @@ class PyGDataset(AbstractDataset):
 
     def _load_data(self):
         device = torch.device('cuda')
-        path = osp.join(osp.expanduser('~'), 'datasets')
+        path = osp.join(os.getcwd(), 'raw_data')
 
         if self.datasetName in ["Cora", "CiteSeer", "PubMed"]:
             pyg = getattr(importlib.import_module('torch_geometric.datasets'), 'Planetoid')
