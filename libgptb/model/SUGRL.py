@@ -32,7 +32,7 @@ class SUGRL(AbstractGCLModel):
         self.dropout = config.get('dropout', 0.2)
         self.device = config.get('device', torch.device('cpu'))
         self.input_dim = data_feature.get('input_dim', 2)
-        self.MLP = make_mlplayers(self.input_dim, [self.nhid] * self.layers)
+        self.encoder_model = make_mlplayers(self.input_dim, [self.nhid] * self.layers)
         self.act = nn.ReLU()
         self.A = None
         self.sparse = True
@@ -50,7 +50,7 @@ class SUGRL(AbstractGCLModel):
             self.A = adj
         seq_a = F.dropout(seq_a, self.dropout, training=self.training)
 
-        h_a = self.MLP(seq_a)
+        h_a = self.encoder_model(seq_a)
         h_p_0 = F.dropout(h_a, 0.2, training=self.training)
         if self.sparse:
             h_p = torch.spmm(adj, h_p_0)
@@ -59,7 +59,7 @@ class SUGRL(AbstractGCLModel):
         return h_a, h_p
 
     def embed(self,  seq_a, adj=None):
-        h_a = self.MLP(seq_a)
+        h_a = self.encoder_model(seq_a)
         if self.sparse:
             h_p = torch.spmm(adj, h_a)
         else:

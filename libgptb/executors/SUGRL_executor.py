@@ -7,7 +7,7 @@ import torch
 from logging import getLogger
 import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
-from torch_geometric.utils import degree
+from torch_geometric.utils import degree, to_dense_adj
 from libgptb.executors.abstract_executor import AbstractExecutor
 from libgptb.utils import get_evaluator, ensure_dir
 from libgptb.evaluators import get_split, LREvaluator
@@ -149,7 +149,7 @@ class SUGRLExecutor(AbstractExecutor):
         self._logger.info('You select `{}` optimizer.'.format(self.learner.lower()))
         if self.learner.lower() == 'adam':
             optimizer = torch.optim.Adam(self.model.encoder_model.parameters(), lr=self.learning_rate,
-                                        momentum=self.lr_momentum, weight_decay=self.weight_decay)
+                                         weight_decay=self.weight_decay)
         elif self.learner.lower() == 'sgd':
             optimizer = torch.optim.SGD(self.model.encoder_model.parameters(), lr=self.learning_rate,
                                         momentum=self.lr_momentum, weight_decay=self.weight_decay)
@@ -262,7 +262,8 @@ class SUGRLExecutor(AbstractExecutor):
         """
         self._logger.info('Start evaluating ...')
         self.model.encoder_model.eval()
-        _, embs = self.model.embed(data.x, data.edge_index)
+        adj = self.normalize_graph(data)
+        _, embs = self.model.embed(data.x, adj)
         z = embs / embs.norm(dim=1)[:, None]
         split = get_split(num_samples=z.size()[0], train_ratio=0.1, test_ratio=0.8)
         result = LREvaluator()(z, data.y, split)
@@ -387,21 +388,23 @@ class SUGRLExecutor(AbstractExecutor):
         return min_val_loss
 
     def normalize_graph(self, data):
-            i = torch.LongTensor([data.edge_index[0].numpy(), data.edge_index[1].numpy()])
-            v = torch.FloatTensor(torch.ones([data.num_edges]))
-            A_sp = torch.sparse.FloatTensor(i, v, torch.Size([data.num_nodes, data.num_nodes]))
-            A = A_sp.to_dense()
-            I = torch.eye(A.shape[1]).to(A.device)
-            A_I = A + I
+        device = data.x.device
+        i = data.edge_index
+        v = torch.FloatTensor(torch.ones([data.num_edges])).to(device)
+        A_sp = torch.sparse.FloatTensor(i, v, torch.Size([data.num_nodes, data.num_nodes]))
+        A = A_sp.to_dense()
+        I = torch.eye(A.shape[1]).to(device)
+        A_I = A + I
 
-            eps = 2.2204e-16
-            deg_inv_sqrt = (A_I.sum(dim=-1).clamp(min=0.) + eps).pow(-0.5)
-            if A_I.size()[0] != A_I.size()[1]:
-                A_I = deg_inv_sqrt.unsqueeze(-1) * (
-                            deg_inv_sqrt.unsqueeze(-1) * A_I)
-            else:
-                A_I = deg_inv_sqrt.unsqueeze(-1) * A_I * deg_inv_sqrt.unsqueeze(-2)
-            return A_I
+        eps = 2.2204e-16
+        deg_inv_sqrt = (A_I.sum(dim=-1).clamp(min=0.) + eps).pow(-0.5)
+        if A_I.size()[0] != A_I.size()[1]:
+            A_I = deg_inv_sqrt.unsqueeze(-1) * (
+                        deg_inv_sqrt.unsqueeze(-1) * A_I)
+        else:
+            A_I = deg_inv_sqrt.unsqueeze(-1) * A_I * deg_inv_sqrt.unsqueeze(-2)
+
+        return A_I.to_sparse()
 
     def _train_epoch(self, train_dataloader, epoch_idx, loss_func=None):
         """
@@ -447,7 +450,7 @@ class SUGRLExecutor(AbstractExecutor):
             loss_mar_1 += (self.margin_loss(s_p_1, s_n, margin_label)).mean()
             mask_margin_N += torch.max((s_n - s_p.detach() - self.my_margin_2),
                                        torch.tensor([0.]).to(self.device)).sum()
-        mask_margin_N = mask_margin_N / self.args.NN
+        mask_margin_N = mask_margin_N / self.NN
 
         loss = loss_mar * self.w_loss1 + loss_mar_1 * self.w_loss2 + mask_margin_N * self.w_loss3
         loss.backward()
