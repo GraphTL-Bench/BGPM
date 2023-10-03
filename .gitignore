@@ -7,3 +7,5 @@ __pycache__/
 /libgptb/tmp/*
 /libgptb/cache/*
 /libgptb/log/*
+/libgptb/model/*/__pycache__
+/libgptb/data/dataset/*/__pycache__
