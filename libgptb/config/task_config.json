@@ -11,6 +11,11 @@
             "dataset_class": "DGLDataset",
             "executor": "CCAExecutor",
             "evaluator": "CCAEvaluator"
+        },
+        "BGRL": {
+            "dataset_class": "PyGDataset",
+            "executor": "BGRLExecutor",
+            "evaluator": "BGRLEvaluator"
         }
     }
 }
