@@ -1,7 +1,7 @@
 {
     "GCL": {
         "allowed_model": ["DGI", "GRACE", "MVGRL", "CCA-SSG", "BGRL", "Barlow", "SUGRL", "SFA", "AFGRL", "COSTA"],
-        "allowed_dataset": ["Cora", "CiteSeer", "PubMed","Computers", "Photo"],
+        "allowed_dataset": ["Cora", "CiteSeer", "PubMed","Computers", "Photo","CS","Physics"],
         "DGI": {
             "dataset_class": "PyGDataset",
             "executor": "DGIExecutor",
