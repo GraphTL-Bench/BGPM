@@ -107,7 +107,6 @@ class BootstrapContrast(torch.nn.Module):
 
         return (l1 + l2) * 0.5
 
-
 class WithinEmbedContrast(torch.nn.Module):
     def __init__(self, loss: Loss, **kwargs):
         super(WithinEmbedContrast, self).__init__()
