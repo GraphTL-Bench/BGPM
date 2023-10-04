@@ -17,6 +17,11 @@
             "executor": "CCAExecutor",
             "evaluator": "CCAEvaluator"
         },
+        "BGRL": {
+            "dataset_class": "PyGDataset",
+            "executor": "BGRLExecutor",
+            "evaluator": "BGRLEvaluator"
+        },
         "SFA": {
             "dataset_class": "DGLDataset",
             "executor": "SFAExecutor",
