@@ -259,7 +259,7 @@ class CCAExecutor(AbstractExecutor):
         graph = graph.remove_self_loop().add_self_loop().to(self.device)
         feat = feat.to(self.device)
         z = self.model.gconv(graph, feat)
-        split = get_split(num_samples=z.size()[0], train_ratio=0.1, test_ratio=0.8)
+        split = get_split(num_samples=z.size()[0], train_ratio=0.1, test_ratio=0.8, dataset=self.config['dataset'])
         labels = graph.ndata['label']
 
         result = LREvaluator()(z, labels, split)

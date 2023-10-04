@@ -253,7 +253,7 @@ class BGRLExecutor(AbstractExecutor):
         self.model.encoder_model.eval()
         h1, h2, _, _, _, _ = self.model.encoder_model(data.x, data.edge_index)
         z = torch.cat([h1, h2], dim=1)
-        split = get_split(num_samples=z.size()[0], train_ratio=0.1, test_ratio=0.8)
+        split = get_split(num_samples=z.size()[0], train_ratio=0.1, test_ratio=0.8, dataset=self.config['dataset'])
         result = LREvaluator()(z, data.y, split)
         print(f'(E): Best test F1Mi={result["micro_f1"]:.4f}, F1Ma={result["macro_f1"]:.4f}')
 
