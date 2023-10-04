@@ -139,7 +139,7 @@ class DGIExecutor(AbstractExecutor):
         self._logger.info('You select `{}` optimizer.'.format(self.learner.lower()))
         if self.learner.lower() == 'adam':
             optimizer = torch.optim.Adam(self.model.encoder_model.parameters(), lr=self.learning_rate,
-                                        momentum=self.lr_momentum, weight_decay=self.weight_decay)
+                                         weight_decay=self.weight_decay)
         elif self.learner.lower() == 'sgd':
             optimizer = torch.optim.SGD(self.model.encoder_model.parameters(), lr=self.learning_rate,
                                         momentum=self.lr_momentum, weight_decay=self.weight_decay)
