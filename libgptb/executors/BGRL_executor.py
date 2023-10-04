@@ -12,7 +12,7 @@ from libgptb.evaluators import get_split, LREvaluator
 from functools import partial
 
 
-class DGIExecutor(AbstractExecutor):
+class BGRLExecutor(AbstractExecutor):
     def __init__(self, config, model, data_feature):
         self.evaluator = get_evaluator(config)
         self.config = config
@@ -251,8 +251,9 @@ class DGIExecutor(AbstractExecutor):
         """
         self._logger.info('Start evaluating ...')
         self.model.encoder_model.eval()
-        z, _, _ = self.model.encoder_model(data.x, data.edge_index)
-        split = get_split(num_samples=z.size()[0], train_ratio=0.1, test_ratio=0.8, dataset=self.config['dataset'])
+        h1, h2, _, _, _, _ = self.model.encoder_model(data.x, data.edge_index)
+        z = torch.cat([h1, h2], dim=1)
+        split = get_split(num_samples=z.size()[0], train_ratio=0.1, test_ratio=0.8)
         result = LREvaluator()(z, data.y, split)
         print(f'(E): Best test F1Mi={result["micro_f1"]:.4f}, F1Ma={result["macro_f1"]:.4f}')
 
@@ -375,8 +376,8 @@ class DGIExecutor(AbstractExecutor):
         self.model.encoder_model.train()
         # loss_func = loss_func if loss_func is not None else self.model.calculate_loss
         self.optimizer.zero_grad()
-        z, g, zn = self.model.encoder_model(train_dataloader.x, train_dataloader.edge_index)
-        loss = self.model.contrast_model(h=z, g=g, hn=zn)
+        _, _, h1_pred, h2_pred, h1_target, h2_target = self.model.encoder_model(train_dataloader.x, train_dataloader.edge_index)
+        loss = self.model.contrast_model(h1_pred=h1_pred, h2_pred=h2_pred, h1_target=h1_target.detach(), h2_target=h2_target.detach())
         # loss = loss_func(batch)
         self._logger.debug(loss.item())
         loss.backward()

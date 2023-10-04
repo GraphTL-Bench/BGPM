@@ -5,14 +5,16 @@ import numpy as np
 import datetime
 import torch
 from logging import getLogger
+import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
+from torch_geometric.utils import degree, to_dense_adj
 from libgptb.executors.abstract_executor import AbstractExecutor
 from libgptb.utils import get_evaluator, ensure_dir
 from libgptb.evaluators import get_split, LREvaluator
 from functools import partial
 
 
-class DGIExecutor(AbstractExecutor):
+class SUGRLExecutor(AbstractExecutor):
     def __init__(self, config, model, data_feature):
         self.evaluator = get_evaluator(config)
         self.config = config
@@ -38,6 +40,14 @@ class DGIExecutor(AbstractExecutor):
         total_num = sum([param.nelement() for param in self.model.parameters()])
         self._logger.info('Total parameter numbers: {}'.format(total_num))
 
+        self.my_margin = self.config.get('margin1', 0.9)
+        self.my_margin_2 = self.my_margin + self.config.get('margin2', 0.9)
+        self.w_loss1 = self.config.get('loss_weight_12', 20)
+        self.w_loss2 = self.config.get('loss_weight_12', 20)
+        self.NN = self.config.get('NN', 1)
+        self.w_loss3 = 1
+
+        self.margin_loss = torch.nn.MarginRankingLoss(margin=self.my_margin, reduce=False)
         self.epochs = self.config.get('max_epoch', 100)
         self.train_loss = self.config.get('train_loss', 'none')
         self.learner = self.config.get('learner', 'adam')
@@ -138,7 +148,8 @@ class DGIExecutor(AbstractExecutor):
         """
         self._logger.info('You select `{}` optimizer.'.format(self.learner.lower()))
         if self.learner.lower() == 'adam':
-            optimizer = torch.optim.Adam(self.model.encoder_model.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
+            optimizer = torch.optim.Adam(self.model.encoder_model.parameters(), lr=self.learning_rate,
+                                         weight_decay=self.weight_decay)
         elif self.learner.lower() == 'sgd':
             optimizer = torch.optim.SGD(self.model.encoder_model.parameters(), lr=self.learning_rate,
                                         momentum=self.lr_momentum, weight_decay=self.weight_decay)
@@ -251,8 +262,10 @@ class DGIExecutor(AbstractExecutor):
         """
         self._logger.info('Start evaluating ...')
         self.model.encoder_model.eval()
-        z, _, _ = self.model.encoder_model(data.x, data.edge_index)
-        split = get_split(num_samples=z.size()[0], train_ratio=0.1, test_ratio=0.8, dataset=self.config['dataset'])
+        adj = self.normalize_graph(data)
+        _, embs = self.model.embed(data.x, adj)
+        z = embs / embs.norm(dim=1)[:, None]
+        split = get_split(num_samples=z.size()[0], train_ratio=0.1, test_ratio=0.8)
         result = LREvaluator()(z, data.y, split)
         print(f'(E): Best test F1Mi={result["micro_f1"]:.4f}, F1Ma={result["macro_f1"]:.4f}')
 
@@ -310,6 +323,21 @@ class DGIExecutor(AbstractExecutor):
         num_batches = len(train_dataloader)
         self._logger.info("num_batches:{}".format(num_batches))
 
+        A_I_nomal = self.normalize_graph(train_dataloader)
+        A_degree = degree(A_I_nomal._indices()[0], train_dataloader.num_nodes,
+                          dtype=int).tolist()
+        edge_index = A_I_nomal._indices()[1]
+
+        deg_list_2 = [0]
+        for i in range(train_dataloader.num_nodes):
+            deg_list_2.append(deg_list_2[-1] + A_degree[i])
+        self.idx_p_list = []
+        for j in range(1, 101):
+            random_list = [deg_list_2[i] + j % A_degree[i] for i in
+                           range(train_dataloader.num_nodes)]
+            idx_p = edge_index[random_list]
+            self.idx_p_list.append(idx_p)
+
         for epoch_idx in range(self._epoch_num, self.epochs):
             start_time = time.time()
             losses = self._train_epoch(train_dataloader, epoch_idx, self.loss_func)
@@ -359,6 +387,25 @@ class DGIExecutor(AbstractExecutor):
             self.load_model_with_epoch(best_epoch)
         return min_val_loss
 
+    def normalize_graph(self, data):
+        device = data.x.device
+        i = data.edge_index
+        v = torch.FloatTensor(torch.ones([data.num_edges])).to(device)
+        A_sp = torch.sparse.FloatTensor(i, v, torch.Size([data.num_nodes, data.num_nodes]))
+        A = A_sp.to_dense()
+        I = torch.eye(A.shape[1]).to(device)
+        A_I = A + I
+
+        eps = 2.2204e-16
+        deg_inv_sqrt = (A_I.sum(dim=-1).clamp(min=0.) + eps).pow(-0.5)
+        if A_I.size()[0] != A_I.size()[1]:
+            A_I = deg_inv_sqrt.unsqueeze(-1) * (
+                        deg_inv_sqrt.unsqueeze(-1) * A_I)
+        else:
+            A_I = deg_inv_sqrt.unsqueeze(-1) * A_I * deg_inv_sqrt.unsqueeze(-2)
+
+        return A_I.to_sparse()
+
     def _train_epoch(self, train_dataloader, epoch_idx, loss_func=None):
         """
         完成模型一个轮次的训练
@@ -371,16 +418,44 @@ class DGIExecutor(AbstractExecutor):
         Returns:
             list: 每个batch的损失的数组
         """
-        # self.model.encoder_model.train()
-        self.model.encoder_model.train()
-        # loss_func = loss_func if loss_func is not None else self.model.calculate_loss
+        self.model.train()
         self.optimizer.zero_grad()
-        z, g, zn = self.model.encoder_model(train_dataloader.x, train_dataloader.edge_index)
-        loss = self.model.contrast_model(h=z, g=g, hn=zn)
-        # loss = loss_func(batch)
-        self._logger.debug(loss.item())
+        idx_list = []
+        for i in range(self.NN):
+            idx_0 = np.random.permutation(train_dataloader.num_nodes)
+            idx_list.append(idx_0)
+
+        A_I_nomal = self.normalize_graph(train_dataloader)
+
+        h_a, h_p = self.model(train_dataloader.x, A_I_nomal)
+
+        h_p_1 = (h_a[self.idx_p_list[epoch_idx % 100]] + h_a[
+                 self.idx_p_list[(epoch_idx + 2) % 100]] + h_a[
+                 self.idx_p_list[(epoch_idx + 4) % 100]] + h_a[
+                 self.idx_p_list[(epoch_idx + 6) % 100]] + h_a[
+                 self.idx_p_list[(epoch_idx + 8) % 100]]) / 5
+        s_p = F.pairwise_distance(h_a, h_p)
+        s_p_1 = F.pairwise_distance(h_a, h_p_1)
+        s_n_list = []
+        for h_n in idx_list:
+            s_n = F.pairwise_distance(h_a, h_a[h_n])
+            s_n_list.append(s_n)
+        margin_label = -1 * torch.ones_like(s_p)
+
+        loss_mar = 0
+        loss_mar_1 = 0
+        mask_margin_N = 0
+        for s_n in s_n_list:
+            loss_mar += (self.margin_loss(s_p, s_n, margin_label)).mean()
+            loss_mar_1 += (self.margin_loss(s_p_1, s_n, margin_label)).mean()
+            mask_margin_N += torch.max((s_n - s_p.detach() - self.my_margin_2),
+                                       torch.tensor([0.]).to(self.device)).sum()
+        mask_margin_N = mask_margin_N / self.NN
+
+        loss = loss_mar * self.w_loss1 + loss_mar_1 * self.w_loss2 + mask_margin_N * self.w_loss3
         loss.backward()
         self.optimizer.step()
+
         return loss.item()
 
     # def _valid_epoch(self, eval_dataloader, epoch_idx, loss_func=None):

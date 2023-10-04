@@ -10,9 +10,10 @@ from libgptb.executors.abstract_executor import AbstractExecutor
 from libgptb.utils import get_evaluator, ensure_dir
 from libgptb.evaluators import get_split, LREvaluator
 from functools import partial
+from libgptb.augmentors import EdgeRemovingDGL, FeatureMaskingDGL
 
 
-class DGIExecutor(AbstractExecutor):
+class CCAExecutor(AbstractExecutor):
     def __init__(self, config, model, data_feature):
         self.evaluator = get_evaluator(config)
         self.config = config
@@ -20,6 +21,8 @@ class DGIExecutor(AbstractExecutor):
         self.device = self.config.get('device', torch.device('cpu'))
         self.model = model.to(self.device)
         self.exp_id = self.config.get('exp_id', None)
+        self.dfr = self.config.get('dfr', 0.2)
+        self.der = self.config.get('der', 0.2)
 
         self.cache_dir = './libgptb/cache/{}/model_cache'.format(self.exp_id)
         self.evaluate_res_dir = './libgptb/cache/{}/evaluate_cache'.format(self.exp_id)
@@ -251,9 +254,15 @@ class DGIExecutor(AbstractExecutor):
         """
         self._logger.info('Start evaluating ...')
         self.model.encoder_model.eval()
-        z, _, _ = self.model.encoder_model(data.x, data.edge_index)
-        split = get_split(num_samples=z.size()[0], train_ratio=0.1, test_ratio=0.8, dataset=self.config['dataset'])
-        result = LREvaluator()(z, data.y, split)
+        graph = data
+        feat = graph.ndata['feat']
+        graph = graph.remove_self_loop().add_self_loop().to(self.device)
+        feat = feat.to(self.device)
+        z = self.model.gconv(graph, feat)
+        split = get_split(num_samples=z.size()[0], train_ratio=0.1, test_ratio=0.8)
+        labels = graph.ndata['label']
+
+        result = LREvaluator()(z, labels, split)
         print(f'(E): Best test F1Mi={result["micro_f1"]:.4f}, F1Ma={result["macro_f1"]:.4f}')
 
 
@@ -307,12 +316,27 @@ class DGIExecutor(AbstractExecutor):
         best_epoch = 0
         train_time = []
         eval_time = []
-        num_batches = len(train_dataloader)
-        self._logger.info("num_batches:{}".format(num_batches))
+        # num_batches = len(train_dataloader)
+        # self._logger.info("num_batches:{}".format(num_batches))
+        graph = train_dataloader
+        feat = graph.ndata['feat']
+
+        edgeremove = EdgeRemovingDGL(self.dfr)
+        featmask = FeatureMaskingDGL(self.der)
 
         for epoch_idx in range(self._epoch_num, self.epochs):
             start_time = time.time()
-            losses = self._train_epoch(train_dataloader, epoch_idx, self.loss_func)
+            graph1 = edgeremove.augment(graph)
+            graph2 = edgeremove.augment(graph)
+            feat1 = featmask.augment(feat)
+            feat2 = featmask.augment(feat)
+
+            graph1 = graph1.add_self_loop().to(self.device)
+            graph2 = graph2.add_self_loop().to(self.device)
+            feat1 = feat1.to(self.device)
+            feat2 = feat2.to(self.device)
+
+            losses = self._train_epoch(graph1, graph2, feat1, feat2, epoch_idx, self.loss_func)
             t1 = time.time()
             train_time.append(t1 - start_time)
             self._writer.add_scalar('training loss', np.mean(losses), epoch_idx)
@@ -359,7 +383,7 @@ class DGIExecutor(AbstractExecutor):
             self.load_model_with_epoch(best_epoch)
         return min_val_loss
 
-    def _train_epoch(self, train_dataloader, epoch_idx, loss_func=None):
+    def _train_epoch(self, graph1, graph2, feat1, feat2, epoch_idx, loss_func=None):
         """
         完成模型一个轮次的训练
 
@@ -375,8 +399,8 @@ class DGIExecutor(AbstractExecutor):
         self.model.encoder_model.train()
         # loss_func = loss_func if loss_func is not None else self.model.calculate_loss
         self.optimizer.zero_grad()
-        z, g, zn = self.model.encoder_model(train_dataloader.x, train_dataloader.edge_index)
-        loss = self.model.contrast_model(h=z, g=g, hn=zn)
+        z1, z2 = self.model.encoder_model(graph1, graph2, feat1, feat2)
+        loss = self.model.contrast_model(z1, z2)
         # loss = loss_func(batch)
         self._logger.debug(loss.item())
         loss.backward()
