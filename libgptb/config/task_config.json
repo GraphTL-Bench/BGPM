@@ -11,6 +11,11 @@
             "dataset_class": "DGLDataset",
             "executor": "CCAExecutor",
             "evaluator": "CCAEvaluator"
+        },
+        "SFA": {
+            "dataset_class": "DGLDataset",
+            "executor": "SFAExecutor",
+            "evaluator": "SFAEvaluator"
         }
     }
 }
