@@ -6,11 +6,11 @@ __all__ = [
     'SingleBranchContrast',
     'DualBranchContrast',
     'WithinEmbedContrast',
-    'CCAContrast'
-    'BootstrapContrast',
+    'CCAContrast',
+    'BootstrapCsontrat',
     'SameScaleSampler',
     'CrossScaleSampler',
-    'get_sampler'
+    'get_sampler'   
 ]
 
 classes = __all__

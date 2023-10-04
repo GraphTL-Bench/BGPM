@@ -7,6 +7,11 @@
             "executor": "DGIExecutor",
             "evaluator": "DGIEvaluator"
         },
+        "SUGRL": {
+            "dataset_class": "PyGDataset",
+            "executor": "SUGRLExecutor",
+            "evaluator": "SUGRLEvaluator"
+        },
         "CCA": {
             "dataset_class": "DGLDataset",
             "executor": "CCAExecutor",
@@ -16,6 +21,11 @@
             "dataset_class": "PyGDataset",
             "executor": "BGRLExecutor",
             "evaluator": "BGRLEvaluator"
+        },
+        "SFA": {
+            "dataset_class": "DGLDataset",
+            "executor": "SFAExecutor",
+            "evaluator": "SFAEvaluator"
         }
     }
 }
