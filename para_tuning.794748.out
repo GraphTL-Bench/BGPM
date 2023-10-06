@@ -1,0 +1,33 @@
+Starting /home/h/hc443/.bash_profile ... standard AFS bash profile
+
+========================
+Home directory : /home/h/hc443 is not in AFS -- skipping quota check
+========================
+
+On host node436 :
+	 19:45:21 up 72 days, 23:44,  0 users,  load average: 1.09, 1.10, 0.97
+
+=== === === Your Kerberos ticket and AFS token status === === ===
+klist: No credentials cache found (filename: /tmp/krb5cc_515598)
+Kerberos : 
+AFS      : 
+
+Loading default modules ...
+Create file : "/home/h/hc443/.modules" to customize.
+
+No modules loaded
+2023-10-04 19:45:27,409 - INFO - Log directory: ./libgptb/log
+2023-10-04 19:45:27,409 - INFO - Begin pipeline, task=GCL, model_name=GBT, dataset_name=Cora, exp_id=70286
+2023-10-04 19:45:27,409 - INFO - {'task': 'GCL', 'model': 'GBT', 'dataset': 'Cora', 'saved_model': True, 'train': True, 'seed': 0, 'nhid': 512, 'dataset_class': 'PyGDataset', 'executor': 'GBTExecutor', 'evaluator': 'GBTEvaluator', 'layers': 2, 'pe1': 0.5, 'pe2': 0.5, 'pf1': 0.1, 'pf2': 0.1, 'gpu': True, 'gpu_id': 0, 'max_epoch': 4000, 'train_loss': 'none', 'epoch': 0, 'learner': 'adam', 'learning_rate': 0.0005, 'lr_decay': False, 'log_level': 'INFO', 'log_every': 1, 'load_best_epoch': False, 'hyper_tune': False, 'device': device(type='cuda', index=0), 'exp_id': 70286}
+{'task': 'GCL', 'model': 'GBT', 'dataset': 'Cora', 'saved_model': True, 'train': True, 'seed': 0, 'nhid': 512, 'dataset_class': 'PyGDataset', 'executor': 'GBTExecutor', 'evaluator': 'GBTEvaluator', 'layers': 2, 'pe1': 0.5, 'pe2': 0.5, 'pf1': 0.1, 'pf2': 0.1, 'gpu': True, 'gpu_id': 0, 'max_epoch': 4000, 'train_loss': 'none', 'epoch': 0, 'learner': 'adam', 'learning_rate': 0.0005, 'lr_decay': False, 'log_level': 'INFO', 'log_every': 1, 'load_best_epoch': False, 'hyper_tune': False, 'device': device(type='cuda', index=0), 'exp_id': 70286}
+Traceback (most recent call last):
+  File "/home/h/hc443/bench_dev/BGPM/run_model.py", line 36, in <module>
+    run_model(task=args.task, model_name=args.model, dataset_name=args.dataset,
+  File "/home/h/hc443/bench_dev/BGPM/libgptb/pipeline/pipeline.py", line 53, in run_model
+    model = get_model(config, data_feature)
+  File "/home/h/hc443/bench_dev/BGPM/libgptb/utils.py", line 48, in get_model
+    return getattr(importlib.import_module('libgptb.model'),
+  File "/home/h/hc443/bench_dev/BGPM/libgptb/model/GBT.py", line 63, in __init__
+    self.gconv = GConv(input_dim=self.input_dim, hidden_dim=self.nhid, num_layers=self.layers).to(self.device)
+TypeError: __init__() got an unexpected keyword argument 'num_layers'
+srun: error: node436: task 0: Exited with exit code 1

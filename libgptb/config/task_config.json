@@ -1,6 +1,6 @@
 {
     "GCL": {
-        "allowed_model": ["DGI", "GRACE", "MVGRL", "CCA", "BGRL", "Barlow", "SUGRL", "SFA", "AFGRL", "COSTA"],
+        "allowed_model": ["DGI", "GRACE", "MVGRL", "CCA", "BGRL", "GBT", "SUGRL", "SFA", "AFGRL", "COSTA"],
         "allowed_dataset": ["Cora", "CiteSeer", "PubMed","Computers", "Photo","CS","Physics"],
         "DGI": {
             "dataset_class": "PyGDataset",
@@ -26,6 +26,11 @@
             "dataset_class": "DGLDataset",
             "executor": "SFAExecutor",
             "evaluator": "SFAEvaluator"
+        },
+        "GBT": {
+            "dataset_class": "PyGDataset",
+            "executor": "GBTExecutor",
+            "evaluator": "GBTEvaluator"
         }
     }
 }
