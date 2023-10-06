@@ -3,6 +3,7 @@ from libgptb.evaluator.CCA_evaluator import CCAEvaluator
 from libgptb.evaluator.BGRL_evaluator import BGRLEvaluator
 from libgptb.evaluator.SFA_evaluator import SFAEvaluator
 from libgptb.evaluator.SUGRL_evaluator import SUGRLEvaluator
+from libgptb.evaluator.GBT_evaluator import GBTEvaluator
 
 
 __all__ = [
@@ -10,5 +11,6 @@ __all__ = [
     "CCAEvaluator",
     "BGRLEvaluator",
     "SFAEvaluator",
-    "SUGRLEvaluator"
+    "SUGRLEvaluator",
+    "GBTEvaluator",
 ]

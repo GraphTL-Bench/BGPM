@@ -3,6 +3,7 @@ from libgptb.executors.SUGRL_executor import SUGRLExecutor
 from libgptb.executors.CCA_executor import CCAExecutor
 from libgptb.executors.BGRL_executor import BGRLExecutor
 from libgptb.executors.SFA_executor import SFAExecutor
+from libgptb.executors.GBT_executor import GBTExecutor
 
 
 __all__ = [
@@ -10,5 +11,6 @@ __all__ = [
     "CCAExecutor",
     "SFAExecutor",
     "SUGRLExecutor",
-    "BGRLExecutor"
+    "BGRLExecutor",
+    "GBTExecutor"
 ]

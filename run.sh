@@ -15,4 +15,5 @@ module purge > /dev/null 2>&1
 conda activate pygcl
 
 ## cora
-srun python3 run_model.py --task GCL --model BGRL --dataset Cora --config_file config1
+#srun python3 run_model.py --task GCL --model BGRL --dataset Cora --config_file config1
+srun python3 run_model.py --task GCL --model GBT --dataset Cora --config_file config1
