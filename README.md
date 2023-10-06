@@ -102,19 +102,77 @@ Now everything should be ready for execution.
 
 ## The execution environment
 
-### 0.Docerfile_x86
-```
-FROM pytorch/pytorch:1.9.0-cuda11.1-cudnn8-devel
+### Docerfile_x86
+```dockerfile
+FROM pytorch/pytorch:1.13.1-cuda11.6-cudnn8-devel
 COPY requirements.txt /opt
-RUN pip install torch-scatter==2.0.7 torch-sparse==0.6.10 torch-cluster==1.5.9 torch-spline-conv==1.2.1 torch-geometric==2.0 -f https://data.pyg.org/whl/torch-1.9.0+cu111.html\ 
+RUN pip install -r /opt/requirements.txt \
     && pip install tensorboard \
-    && pip install  dgl -f https://data.dgl.ai/wheels/cu113/repo.html \
+    && pip install pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv -f https://data.pyg.org/whl/torch-1.13.0+cu116.html \
+    && pip install torch_geometric\
+    && pip install  dgl -f https://data.dgl.ai/wheels/cu116/repo.html \
     && pip install  dglgo -f https://data.dgl.ai/wheels-test/repo.html
-RUN pip install -r /opt/requirements.txt
-ENV PATH=$PATH:/usr/local/cuda-11.1/bin LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/cuda-11.1/lib64:/usr/lib/x86_64-linux-gnu
+ENV PATH=$PATH:/usr/local/cuda-11.6/bin LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/cuda-11.6/lib64:/usr/lib/x86_64-linux-gnu
 ```
 
-### 1. Requirements.txt
+### Dockerfile_ppc64le(For RPI DCS cluster)
+
+```dockerfile
+FROM nvidia/cuda:11.2.2-cudnn8-devel-centos8
+COPY requirements.txt /opt
+RUN sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-* && sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
+
+RUN mkdir -p ~/miniconda3\
+    #&& yum update && 
+    && yum -y install wget gcc-gfortran cmake blas lapack git
+RUN wget https://repo.anaconda.com/miniconda/Miniconda3-py39_23.5.2-0-Linux-ppc64le.sh -O ~/miniconda3/miniconda.sh\
+    && bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3\
+    &&rm -rf ~/miniconda3/miniconda.sh
+RUN ~/miniconda3/bin/conda init bash 
+ENV PATH=/root/miniconda3/bin:$PATH
+RUN git clone https://github.com/pytorch/pytorch.git
+RUN conda update -n base conda && conda install pandas astunparse numpy ninja pyyaml setuptools cmake cffi typing_extensions future six requests dataclasses\
+    && conda install -c conda-forge liblapack && conda install -c anaconda nomkl
+RUN cd pytorch && git checkout tags/v1.12.1 && git submodule sync &&\
+    git submodule update --init --recursive --jobs 0 
+    
+RUN yum -y install which && export CMAKE_PREFIX_PATH=${CONDA_PREFIX:-"$(dirname $(which conda))/../"} && cd pytorch && TORCH_CUDA_ARCH_LIST=7.0 USE_CUDA=1 MAX_JOBS=8 python setup.py develop
+RUN conda install -c https://ftp.osuosl.org/pub/open-ce/1.7.2-p10/1.7.2-p10/  openblas-devel 
+## pytorch_scatter==2.0.8 pytorch_sparse==0.6.10 pytorch_geometric==2.1.0 tensorboard=2.9.1 pandas
+RUN pip install --no-cache-dir torch-scatter==2.0.9 torch-sparse==0.6.14  -f https://data.pyg.org/whl/torch-1.12.1+cu102.html && pip install --no-cache-dir torch-geometric
+RUN pip install --no-cache-dir pandas && conda install -c https://ftp.osuosl.org/pub/open-ce/1.7.2-p10/1.7.2-p10/ tensorboard=2.9.1
+
+```
+
+### Usage
+
+1. You can build from source with command `docker build -f $Dockerfile path -t $YourImageName` .All images can be found in the Onedrive
+
+   1. X86 https://portland-my.sharepoint.com/:u:/g/personal/qma233-c_my_cityu_edu_hk/EQmT5Lsg_YBLkZPaMZJMczABAknEqHYPa6lj2NQPdBi7ww?e=8uoMmx
+   2. PPC64 https://portland-my.sharepoint.com/:u:/g/personal/qma233-c_my_cityu_edu_hk/EQmT5Lsg_YBLkZPaMZJMczABAknEqHYPa6lj2NQPdBi7ww?e=8uoMmx
+
+2. Unzip the \$IMAGE.tar.gz and get the \$IMAGE.tar file
+
+3. Execute the following command
+
+   ```shell
+   docker import - $YourImageName < $IMAGE.tar
+   docker run -v ~/BGPM/:/BGPM -w /BGPM --gpus all $YourImageName /bin/bash /BGPM/command.sh
+   # -v $HOST_PATH:$Container_Path means mounting the localfile to the container. 
+   # -w means setting the working dir
+   # --gpus all means using all GPU
+   # /bin/bash /BGPM/command.sh means using the /bin/bash of Container to execute the command.sh
+   ```
+
+4. You can have your own command.sh
+
+   ```shell
+   python3 ./run_model.py --task GCL --model DGI --dataset Cora --config_file random_config/config_1
+   ```
+
+   
+
+### Requirements.txt
 
 ```
 torch_geometric 
@@ -125,7 +183,7 @@ networkx
 PyGCL
 ```
 
-### 2. Singularity.def file
+###  Singularity.def file
 
 ```bash
 #Bootstrap is used to specify the agent,where the base image from,here localimage means to build from a local image
