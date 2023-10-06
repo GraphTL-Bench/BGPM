@@ -4,8 +4,8 @@ import numpy as np
 
 def parse_search_space(space_file):
     search_space = {}
-    if os.path.exists('./{}.json'.format(space_file)):
-        with open('./{}.json'.format(space_file), 'r') as f:
+    if os.path.exists('./random_config/{}.json'.format(space_file)):
+        with open('./random_config/{}.json'.format(space_file), 'r') as f:
             paras_dict = json.load(f)
             for name in paras_dict:
                 paras_type = paras_dict[name]['type']
