@@ -4,8 +4,8 @@ import numpy as np
 
 def parse_search_space(space_file):
     search_space = {}
-    if os.path.exists('./random_config/{}.json'.format(space_file)):
-        with open('./random_config/{}.json'.format(space_file), 'r') as f:
+    if os.path.exists('./{}.json'.format(space_file)):
+        with open('./{}.json'.format(space_file), 'r') as f:
             paras_dict = json.load(f)
             for name in paras_dict:
                 paras_type = paras_dict[name]['type']
@@ -40,7 +40,7 @@ def main():
     for i in range(20):
         search_sapce = parse_search_space(space_file)
         # print(object(search_sapce))
-        config_file = "./config_{}.json".format(i)
+        config_file = "./random_config/config_{}.json".format(i)
         with open(config_file, "w") as w:
             w.write(json.dumps(search_sapce,ensure_ascii=False, cls=JsonEncoder))
             print("config_{} is generated".format(i))

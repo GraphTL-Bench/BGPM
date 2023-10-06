@@ -1,0 +1,1 @@
+{"learning_rate": 0.01, "drop_edge_rate": 0.5, "drop_feature_rate": 0.3, "num_hidden": 512, "num_proj_hidden": 512, "num_epochs": 10000}
