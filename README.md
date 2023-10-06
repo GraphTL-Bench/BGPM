@@ -148,9 +148,8 @@ RUN pip install --no-cache-dir pandas && conda install -c https://ftp.osuosl.org
 
 1. You can build from source with command `docker build -f $Dockerfile path -t $YourImageName` .All images can be found in the Onedrive
 
-   1. X86 https://portland-my.sharepoint.com/:u:/g/personal/qma233-c_my_cityu_edu_hk/EQmT5Lsg_YBLkZPaMZJMczABAknEqHYPa6lj2NQPdBi7ww?e=8uoMmx
-   2. PPC64 https://portland-my.sharepoint.com/:u:/g/personal/qma233-c_my_cityu_edu_hk/EQmT5Lsg_YBLkZPaMZJMczABAknEqHYPa6lj2NQPdBi7ww?e=8uoMmx
-
+   1. X86 [X86](https://portland-my.sharepoint.com/:u:/g/personal/qma233-c_my_cityu_edu_hk/EQmT5Lsg_YBLkZPaMZJMczABAknEqHYPa6lj2NQPdBi7ww?e=YLrw5i)
+   2. PPC64 [IBM POWER](https://portland-my.sharepoint.com/:u:/g/personal/qma233-c_my_cityu_edu_hk/EdPHWym4vCtFhvOwCLV5ohcBqtoLm9ZCthcY4aL-cHr0_w?e=Bs1F3g)
 2. Unzip the \$IMAGE.tar.gz and get the \$IMAGE.tar file
 
 3. Execute the following command
