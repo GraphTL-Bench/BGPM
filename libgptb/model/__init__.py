@@ -5,6 +5,7 @@ from libgptb.model.BGRL import BGRL
 from libgptb.model.SFA import SFA
 from libgptb.model.GBT import GBT
 from libgptb.model.GRACE import GRACE
+from libgptb.model.MVGRL import MVGRL
 
 
 __all__ = [
@@ -14,5 +15,6 @@ __all__ = [
     SFA,
     SUGRL,
     GBT,
-    GRACE
+    GRACE,
+    MVGRL
 ]
