@@ -41,6 +41,11 @@
             "dataset_class": "PyGDataset",
             "executor": "MVGRLExecutor",
             "evaluator": "MVGRLEvaluator"
+        },
+        "COSTA": {
+            "dataset_class": "PyGDataset",
+            "executor": "COSTAExecutor",
+            "evaluator": "COSTAEvaluator"
         }
     }
 }
