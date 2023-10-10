@@ -4,6 +4,8 @@ from libgptb.model.CCA import CCA
 from libgptb.model.BGRL import BGRL
 from libgptb.model.SFA import SFA
 from libgptb.model.GBT import GBT
+from libgptb.model.GRACE import GRACE
+
 
 __all__ = [
     DGI,
@@ -11,5 +13,6 @@ __all__ = [
     BGRL,
     SFA,
     SUGRL,
-    GBT
+    GBT,
+    GRACE
 ]
