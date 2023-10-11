@@ -106,10 +106,11 @@ class BGRL(AbstractGCLModel):
         self.layers = config.get('layers', 3)
         self.device = config.get('device', torch.device('cpu'))
         self.input_dim = data_feature.get('input_dim', 2)
-        self.pe1 = config.get('pe1', 0.5)
-        self.pf1 = config.get('pf1', 0.1)
-        self.pe2 = config.get('pe2', 0.5)
-        self.pf2 = config.get('pf2', 0.1)
+        
+        self.pe1 = config.get('drop_edge_rate1', 0.5)
+        self.pf1 = config.get('drop_feature_rate1', 0.1)
+        self.pe2 = config.get('drop_edge_rate2', 0.5)
+        self.pf2 = config.get('drop_feature_rate2', 0.1)
 
         aug1 = A.Compose([A.EdgeRemoving(pe=self.pe1), A.FeatureMasking(pf=self.pf1)])
         aug2 = A.Compose([A.EdgeRemoving(pe=self.pe2), A.FeatureMasking(pf=self.pf2)])
