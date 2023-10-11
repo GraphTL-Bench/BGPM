@@ -107,10 +107,10 @@ class COSTA(AbstractGCLModel):
         self.device = config.get('device', torch.device('cpu'))
         self.input_dim = data_feature.get('input_dim', 2)
 
-        self.pe1 = config.get('pe1', 0.5)
-        self.pf1 = config.get('pf1', 0.1)
-        self.pe2 = config.get('pe2', 0.5)
-        self.pf2 = config.get('pf2', 0.1)
+        self.pe1 = config.get('drop_edge_rate1', 0.5)
+        self.pf1 = config.get('drop_feature_rate1', 0.1)
+        self.pe2 = config.get('drop_edge_rate2', 0.5)
+        self.pf2 = config.get('drop_feature_rate2', 0.1)
 
         self.ratio = config.get('ratio', 0.5)
         self.tau = config.get('tau',0.1)
