@@ -6,6 +6,8 @@ from libgptb.model.SFA import SFA
 from libgptb.model.GBT import GBT
 from libgptb.model.GRACE import GRACE
 from libgptb.model.MVGRL import MVGRL
+from libgptb.model.COSTA import COSTA
+
 
 
 __all__ = [
@@ -16,5 +18,6 @@ __all__ = [
     SUGRL,
     GBT,
     GRACE,
-    MVGRL
+    MVGRL,
+    COSTA
 ]
