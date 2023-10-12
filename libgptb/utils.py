@@ -84,8 +84,8 @@ def get_logger(config, name=None):
     log_dir = './libgptb/log'
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
-    log_filename = '{}-{}-{}-{}.log'.format(config['exp_id'],
-                                            config['model'], config['dataset'], get_local_time())
+    log_filename = '{}-{}-{}-{}-{}.log'.format(config['model'],config['max_epoch'],
+                                            config['exp_id'], config['dataset'], get_local_time())
     logfilepath = os.path.join(log_dir, log_filename)
 
     logger = logging.getLogger(name)
