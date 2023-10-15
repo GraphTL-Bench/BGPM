@@ -51,6 +51,7 @@ class ConfigParser(object):
 
     def _parse_config_file(self, config_file):
         if config_file is not None:
+            self.config['config_file'] = config_file.split('/')[-1]
             # TODO: 对 config file 的格式进行检查
             if os.path.exists('./{}.json'.format(config_file)):
                 with open('./{}.json'.format(config_file), 'r') as f:
