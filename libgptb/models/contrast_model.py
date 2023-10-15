@@ -127,3 +127,14 @@ class CCAContrast(torch.nn.Module):
     def forward(self, h1, h2):
         loss = self.loss.compute(h1, h2)
         return loss
+
+class HomoContrast(torch.nn.Module):
+    def __init__(self, loss: Loss, **kwargs):
+        super(HomoContrast, self).__init__()
+        self.loss = loss
+        self.kwargs = kwargs
+
+    def forward(self, z1, z2, z, graph, graph1, graph2, N):
+        loss = self.loss.compute(z1, z2, z, graph, graph1, graph2, N)
+        return loss 
+
