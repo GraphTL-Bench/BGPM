@@ -22,9 +22,14 @@ class DGLDataset(AbstractDataset):
 
 
         if self.datasetName in ["Cora", "CiteSeer", "PubMed"]:
-            dgl = getattr(importlib.import_module('dgl.data'), f'{self.datasetName}GraphDataset')
+            dgl = getattr(importlib.import_module('dgl.data'), f'{self.datasetName.capitalize()}GraphDataset')
         if self.datasetName in ["Computers", "Photo"]:
-            dgl = getattr(importlib.import_module('dgl.data'), f'AmazonCoBuy{self.datasetName}Dataset')
+            if self.datasetName == "Computers":
+                dgl = getattr(importlib.import_module('dgl.data'), f'AmazonCoBuyComputerDataset')
+            else:
+                dgl = getattr(importlib.import_module('dgl.data'), f'AmazonCoBuy{self.datasetName}Dataset')
+        if self.datasetName in ["CS", "Physics"]:
+            dgl = getattr(importlib.import_module('dgl.data'), f'Coauthor{self.datasetName}Dataset')
         self.dataset = dgl(path)
         
         self.data = self.dataset[0]

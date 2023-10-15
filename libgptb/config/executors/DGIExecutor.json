@@ -1,7 +1,7 @@
 {
     "gpu": true,
-    "gpu_id": 0,
-    "max_epoch": 300,
+    "gpu_id": 5,
+    "max_epoch": 10000,
     "train_loss": "none",
     "epoch": 0,
     "learner": "adam",
@@ -9,7 +9,7 @@
     "lr_decay": false,
     "log_level": "INFO",
     "log_every": 1,
-    "saved_model": true,
+    "saved_model": false,
     "load_best_epoch": false,
     "hyper_tune": false
   }

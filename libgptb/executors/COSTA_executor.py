@@ -250,21 +250,38 @@ class COSTAExecutor(AbstractExecutor):
             test_dataloader(torch.Dataloader): Dataloader
         """
         self._logger.info('Start evaluating ...')
-        self.model.encoder_model.eval()
-        z, _, _ = self.model.encoder_model(data.x, data.edge_index)
-        split = get_split(num_samples=z.size()[0], train_ratio=0.1, test_ratio=0.8, dataset=self.config['dataset'])
-        result = LREvaluator()(z, data.y, split)
-        print(f'(E): Best test F1Mi={result["micro_f1"]:.4f}, F1Ma={result["macro_f1"]:.4f}')
+        # self.model.encoder_model.eval()
+        # z, _, _ = self.model.encoder_model(data.x, data.edge_index)
+        # split = get_split(num_samples=z.size()[0], train_ratio=0.1, test_ratio=0.8, dataset=self.config['dataset'])
+        # result = LREvaluator()(z, data.y, split)
+        # print(f'(E): Best test F1Mi={result["micro_f1"]:.4f}, F1Ma={result["macro_f1"]:.4f}')
 
 
-        self._logger.info('Evaluate result is ' + json.dumps(result))
-        filename = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S') + '_' + \
-                       self.config['model'] + '_' + self.config['dataset']
-        save_path = self.evaluate_res_dir
-        with open(os.path.join(save_path, '{}.json'.format(filename)), 'w') as f:
-            json.dump(result, f)
-            self._logger.info('Evaluate result is saved at ' + os.path.join(save_path, '{}.json'.format(filename)))
-        return result
+        # self._logger.info('Evaluate result is ' + json.dumps(result))
+        # filename = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S') + '_' + \
+        #                self.config['model'] + '_' + self.config['dataset']
+        # save_path = self.evaluate_res_dir
+        # with open(os.path.join(save_path, '{}.json'.format(filename)), 'w') as f:
+        #     json.dump(result, f)
+        #     self._logger.info('Evaluate result is saved at ' + os.path.join(save_path, '{}.json'.format(filename)))
+        # return result
+        for epoch_idx in [50-1, 100-1, 500-1, 1000-1, 10000-1]:
+            self.load_model_with_epoch(epoch_idx)
+            self.model.encoder_model.eval()
+            z, _, _ = self.model.encoder_model(data.x, data.edge_index)
+            split = get_split(num_samples=z.size()[0], train_ratio=0.1, test_ratio=0.8, dataset=self.config['dataset'])
+            result = LREvaluator()(z, data.y, split)
+            print(f'(E): Best test F1Mi={result["micro_f1"]:.4f}, F1Ma={result["macro_f1"]:.4f}')
+
+
+            self._logger.info('Evaluate result is ' + json.dumps(result))
+            filename = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S') + '_' + \
+                        self.config['model'] + '_' + self.config['dataset']
+            save_path = self.evaluate_res_dir
+            with open(os.path.join(save_path, '{}.json'.format(filename)), 'w') as f:
+                json.dump(result, f)
+                self._logger.info('Evaluate result is saved at ' + os.path.join(save_path, '{}.json'.format(filename)))
+            return result
         
         # with torch.no_grad():
         #     self.model.eval()
@@ -336,6 +353,9 @@ class COSTAExecutor(AbstractExecutor):
                     format(epoch_idx, self.epochs, np.mean(losses),  log_lr, (end_time - start_time))
                 self._logger.info(message)
 
+            if epoch_idx+1 in [50, 100, 500, 1000, 10000]:
+                model_file_name = self.save_model_with_epoch(epoch_idx)
+                self._logger.info('saving to {}'.format(model_file_name))
 
             if val_loss < min_val_loss:
                 wait = 0

@@ -30,8 +30,8 @@ def run_model(task=None, model_name=None, dataset_name=None, config_file=None,
         config['exp_id'] = exp_id
     # logger
     logger = get_logger(config)
-    logger.info('Begin pipeline, task={}, model_name={}, dataset_name={}, exp_id={}'.
-                format(str(task), str(model_name), str(dataset_name), str(exp_id)))
+    logger.info('Begin pipeline, config_file={}, model_name={}, dataset_name={}, exp_id={}'.
+                format(str(config_file), str(model_name), str(dataset_name), str(exp_id)))
     logger.info(config.config)
     # seed
     seed = config.get('seed', 0)

@@ -250,48 +250,36 @@ class DGIExecutor(AbstractExecutor):
             test_dataloader(torch.Dataloader): Dataloader
         """
         self._logger.info('Start evaluating ...')
-        self.model.encoder_model.eval()
-        z, _, _ = self.model.encoder_model(data.x, data.edge_index)
-        split = get_split(num_samples=z.size()[0], train_ratio=0.1, test_ratio=0.8, dataset=self.config['dataset'])
-        result = LREvaluator()(z, data.y, split)
-        print(f'(E): Best test F1Mi={result["micro_f1"]:.4f}, F1Ma={result["macro_f1"]:.4f}')
+        # self.model.encoder_model.eval()
+        # z, _, _ = self.model.encoder_model(data.x, data.edge_index)
+        # split = get_split(num_samples=z.size()[0], train_ratio=0.1, test_ratio=0.8, dataset=self.config['dataset'])
+        # result = LREvaluator()(z, data.y, split)
+        # print(f'(E): Best test F1Mi={result["micro_f1"]:.4f}, F1Ma={result["macro_f1"]:.4f}')
 
 
-        self._logger.info('Evaluate result is ' + json.dumps(result))
-        filename = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S') + '_' + \
-                       self.config['model'] + '_' + self.config['dataset']
-        save_path = self.evaluate_res_dir
-        with open(os.path.join(save_path, '{}.json'.format(filename)), 'w') as f:
-            json.dump(result, f)
-            self._logger.info('Evaluate result is saved at ' + os.path.join(save_path, '{}.json'.format(filename)))
-        return result
+        # self._logger.info('Evaluate result is ' + json.dumps(result))
+        # filename = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S') + '_' + \
+        #                self.config['model'] + '_' + self.config['dataset']
+        # save_path = self.evaluate_res_dir
+        # with open(os.path.join(save_path, '{}.json'.format(filename)), 'w') as f:
+        #     json.dump(result, f)
+        #     self._logger.info('Evaluate result is saved at ' + os.path.join(save_path, '{}.json'.format(filename)))
+        # return result
         
-        # with torch.no_grad():
-        #     self.model.eval()
-        #     # self.evaluator.clear()
-        #     y_truths = []
-        #     y_preds = []
-        #     for batch in test_dataloader:
-        #         batch.to_tensor(self.device)
-        #         output = self.model.predict(batch)
-        #         y_true = self._scaler.inverse_transform(batch['y'][..., :self.output_dim])
-        #         y_pred = self._scaler.inverse_transform(output[..., :self.output_dim])
-        #         y_truths.append(y_true.cpu().numpy())
-        #         y_preds.append(y_pred.cpu().numpy())
-        #         # evaluate_input = {'y_true': y_true, 'y_pred': y_pred}
-        #         # self.evaluator.collect(evaluate_input)
-        #     # self.evaluator.save_result(self.evaluate_res_dir)
-        #     y_preds = np.concatenate(y_preds, axis=0)
-        #     y_truths = np.concatenate(y_truths, axis=0)  # concatenate on batch
-        #     outputs = {'prediction': y_preds, 'truth': y_truths}
-        #     filename = \
-        #         time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime(time.time())) + '_' \
-        #         + self.config['model'] + '_' + self.config['dataset'] + '_predictions.npz'
-        #     np.savez_compressed(os.path.join(self.evaluate_res_dir, filename), **outputs)
-        #     self.evaluator.clear()
-        #     self.evaluator.collect({'y_true': torch.tensor(y_truths), 'y_pred': torch.tensor(y_preds)})
-        #     test_result = self.evaluator.save_result(self.evaluate_res_dir)
-        #     return test_result
+        for epoch_idx in [50-1, 100-1, 500-1, 1000-1, 10000-1]:
+            self.load_model_with_epoch(epoch_idx)
+            self.model.encoder_model.eval()
+            z, _, _ = self.model.encoder_model(data.x, data.edge_index)
+            split = get_split(num_samples=z.size()[0], train_ratio=0.1, test_ratio=0.8, dataset=self.config['dataset'])
+            result = LREvaluator()(z, data.y, split)
+            print(f'(E): Best test F1Mi={result["micro_f1"]:.4f}, F1Ma={result["macro_f1"]:.4f}')
+            self._logger.info('Evaluate result is ' + json.dumps(result))
+            filename = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S') + '_' + \
+                        self.config['model'] + '_' + self.config['dataset']
+            save_path = self.evaluate_res_dir
+            with open(os.path.join(save_path, '{}_{}.json'.format(filename,epoch_idx)), 'w') as f:
+                json.dump(result, f)
+                self._logger.info('Evaluate result is saved at ' + os.path.join(save_path, '{}.json'.format(filename)))
 
     def train(self, train_dataloader, eval_dataloader):
         """
@@ -335,6 +323,10 @@ class DGIExecutor(AbstractExecutor):
                 message = 'Epoch [{}/{}] train_loss: {:.4f}, lr: {:.6f}, {:.2f}s'.\
                     format(epoch_idx, self.epochs, np.mean(losses),  log_lr, (end_time - start_time))
                 self._logger.info(message)
+
+            if epoch_idx+1 in [50, 100, 500, 1000, 10000]:
+                model_file_name = self.save_model_with_epoch(epoch_idx)
+                self._logger.info('saving to {}'.format(model_file_name))
 
 
             if val_loss < min_val_loss:
