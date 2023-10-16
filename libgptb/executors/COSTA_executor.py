@@ -281,7 +281,6 @@ class COSTAExecutor(AbstractExecutor):
             with open(os.path.join(save_path, '{}.json'.format(filename)), 'w') as f:
                 json.dump(result, f)
                 self._logger.info('Evaluate result is saved at ' + os.path.join(save_path, '{}.json'.format(filename)))
-            return result
         
         # with torch.no_grad():
         #     self.model.eval()
