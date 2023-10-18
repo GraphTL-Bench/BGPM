@@ -7,6 +7,7 @@ from libgptb.model.GBT import GBT
 from libgptb.model.GRACE import GRACE
 from libgptb.model.MVGRL import MVGRL
 from libgptb.model.COSTA import COSTA
+from libgptb.model.HomoGCL import HomoGCL
 
 
 
@@ -19,5 +20,6 @@ __all__ = [
     GBT,
     GRACE,
     MVGRL,
-    COSTA
+    COSTA,
+    HomoGCL
 ]
