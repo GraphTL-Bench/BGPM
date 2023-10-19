@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from libgptb.losses.abstract_losses import Loss
 SIGMA = 1e-10
 
-class InfoNCE_RFF():
+class InfoNCE_RFF(Loss):
     def __init__(self, tau, rff_dim = 4096, mode = 'infonce'):
         super(InfoNCE_RFF, self).__init__()
         self.tau = tau

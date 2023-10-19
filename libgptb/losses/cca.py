@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from libgptb.losses.abstract_losses import Loss
 
 
-class CCALoss():
+class CCALoss(Loss):
     def __init__(self, lambd):
         super(CCALoss, self).__init__()
         self.lambd = lambd
