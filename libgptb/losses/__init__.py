@@ -7,6 +7,7 @@ from libgptb.losses.barlow_twins import BarlowTwins
 from libgptb.losses.cca import CCALoss
 from libgptb.losses.abstract_losses import Loss
 from libgptb.losses.homo import HomoLoss
+from libgptb.losses.infonce_rff import InfoNCE_RFF
 
 __all__ = [
     'Loss',
@@ -22,7 +23,8 @@ __all__ = [
     'VICReg',
     'BarlowTwins',
     'CCALoss',
-    'HomoLoss'
+    'HomoLoss',
+    'InfoNCE_RFF',
 ]
 
 classes = __all__

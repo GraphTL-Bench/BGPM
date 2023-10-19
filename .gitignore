@@ -9,3 +9,7 @@ __pycache__/
 /libgptb/log/*
 /libgptb/model/*/__pycache__
 /libgptb/data/dataset/*/__pycache__
+
+
+download_graphsaint.sh
+process_graphsaint.py

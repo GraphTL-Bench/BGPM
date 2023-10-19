@@ -4,5 +4,7 @@
     "dfr":0.2,
     "der":0.2,
     "k":2,
-    "temp":0.7
+    "temp":0.7,
+    "rff_dim": 4096,
+    "mode": "rff"
 }
