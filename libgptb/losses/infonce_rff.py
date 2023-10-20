@@ -16,7 +16,7 @@ class InfoNCE_RFF(Loss):
         z1 = F.normalize(h1, dim=-1)
         z2 = F.normalize(h2, dim=-1)
 
-        pos_score = torch.sum(z1 * z2, dim=1)
+        pos_score = torch.exp(torch.sum(z1 * z2, dim=1) / self.tau)
 
         z = torch.cat([z1, z2], dim = 0)
 
