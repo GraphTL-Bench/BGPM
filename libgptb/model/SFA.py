@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from tqdm import tqdm
 from torch.optim import Adam
 from libgptb.evaluators import get_split, LREvaluator
-from libgptb.models import DualBranchContrat, InfoNCEContrast_RFF
+from libgptb.models import DualBranchContrast, InfoNCEContrast_RFF
 
 from dgl.nn import GraphConv
 from libgptb.model.abstract_gcl_model import AbstractGCLModel

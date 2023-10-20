@@ -7,7 +7,7 @@ __all__ = [
     'DualBranchContrast',
     'WithinEmbedContrast',
     'CCAContrast',
-    'BootstrapCsontrat',
+    'BootstrapContrast',
     'SameScaleSampler',
     'CrossScaleSampler',
     'get_sampler',
