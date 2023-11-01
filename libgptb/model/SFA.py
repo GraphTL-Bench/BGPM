@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from tqdm import tqdm
 from torch.optim import Adam
 from libgptb.evaluators import get_split, LREvaluator
-from libgptb.models import DualBranchContrast
+from libgptb.models import DualBranchContrast, InfoNCEContrast_RFF
 
 from dgl.nn import GraphConv
 from libgptb.model.abstract_gcl_model import AbstractGCLModel
@@ -79,7 +79,8 @@ class SFA(AbstractGCLModel):
         self.layers = config.get('layers', 3)
         self.k = config.get('k', 2)
         self.tau = config.get('tau', 0.5)
-        self.lambd = config.get('lambd', 1e-3)
+        self.rff_dim = config.get('rff_dim', 4096)
+        self.mode = config.get('mode', 'rff')
     
         self.device = config.get('device', torch.device('cpu'))
         self.input_dim = data_feature.get('input_dim', 2)
@@ -87,4 +88,5 @@ class SFA(AbstractGCLModel):
 
         self.gconv = GCN(in_dim=self.input_dim, hid_dim=self.nhid, num_layers=self.layers).to(self.device)
         self.encoder_model = Encoder(encoder=self.gconv, hidden_dim=self.nhid, k = self.k).to(self.device)
-        self.contrast_model = DualBranchContrast(loss=L.InfoNCE(tau = self.tau), mode='L2L').to(self.device)
+        self.contrast_model = InfoNCEContrast_RFF(loss=L.InfoNCE_RFF(tau = self.tau, rff_dim = self.rff_dim, mode = self.mode)).to(self.device)
+        # self.contrast_model = DualBranchContrast(loss=L.InfoNCE(tau = self.tau), mode='L2L').to(self.device)

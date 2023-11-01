@@ -1,5 +1,5 @@
 from libgptb.models.samplers import SameScaleSampler, CrossScaleSampler, get_sampler
-from libgptb.models.contrast_model import SingleBranchContrast, DualBranchContrast, WithinEmbedContrast, BootstrapContrast, CCAContrast, HomoContrast
+from libgptb.models.contrast_model import SingleBranchContrast, DualBranchContrast, WithinEmbedContrast, BootstrapContrast, CCAContrast, HomoContrast, InfoNCEContrast_RFF
 
 
 __all__ = [
@@ -7,11 +7,12 @@ __all__ = [
     'DualBranchContrast',
     'WithinEmbedContrast',
     'CCAContrast',
-    'BootstrapCsontrat',
+    'BootstrapContrast',
     'SameScaleSampler',
     'CrossScaleSampler',
     'get_sampler',
-    'HomoContrast'   
+    'HomoContrast',
+    'InfoNCEContrast_RFF'
 ]
 
 classes = __all__

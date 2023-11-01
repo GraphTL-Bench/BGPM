@@ -137,4 +137,14 @@ class HomoContrast(torch.nn.Module):
     def forward(self, z1, z2, z, graph, graph1, graph2, N):
         loss = self.loss.compute(z1, z2, z, graph, graph1, graph2, N)
         return loss 
+    
+class InfoNCEContrast_RFF(torch.nn.Module):
+    def __init__(self, loss: Loss, **kwargs):
+        super(InfoNCEContrast_RFF, self).__init__()
+        self.loss = loss
+        self.kwargs = kwargs
+
+    def forward(self, z1, z2):
+        loss = self.loss.compute(z1, z2)
+        return loss
 
