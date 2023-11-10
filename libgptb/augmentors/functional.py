@@ -1,5 +1,5 @@
 import torch
-import networkx as nx
+# import networkx as nx
 import torch.nn.functional as F
 
 from typing import Optional
@@ -131,22 +131,22 @@ def drop_feature_by_weight(x, weights, drop_prob: float, threshold: float = 0.7)
     return x
 
 
-def get_eigenvector_weights(data):
-    def _eigenvector_centrality(data):
-        graph = to_networkx(data)
-        x = nx.eigenvector_centrality_numpy(graph)
-        x = [x[i] for i in range(data.num_nodes)]
-        return torch.tensor(x, dtype=torch.float32).to(data.edge_index.device)
+# def get_eigenvector_weights(data):
+#     def _eigenvector_centrality(data):
+#         graph = to_networkx(data)
+#         x = nx.eigenvector_centrality_numpy(graph)
+#         x = [x[i] for i in range(data.num_nodes)]
+#         return torch.tensor(x, dtype=torch.float32).to(data.edge_index.device)
 
-    evc = _eigenvector_centrality(data)
-    scaled_evc = evc.where(evc > 0, torch.zeros_like(evc))
-    scaled_evc = scaled_evc + 1e-8
-    s = scaled_evc.log()
+#     evc = _eigenvector_centrality(data)
+#     scaled_evc = evc.where(evc > 0, torch.zeros_like(evc))
+#     scaled_evc = scaled_evc + 1e-8
+#     s = scaled_evc.log()
 
-    edge_index = data.edge_index
-    s_row, s_col = s[edge_index[0]], s[edge_index[1]]
+#     edge_index = data.edge_index
+#     s_row, s_col = s[edge_index[0]], s[edge_index[1]]
 
-    return normalize(s_col), evc
+#     return normalize(s_col), evc
 
 
 def get_degree_weights(data):
