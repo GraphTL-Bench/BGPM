@@ -40,11 +40,11 @@ def run_model(task=None, model_name=None, dataset_name=None, config_file=None,
     print(config.config)
     dataset = get_dataset(config)
     # transform the dataset and split
-    data = dataset.get_data()
+    train_data, valid_data, test_data = dataset.get_data()
     # train_data, valid_data, test_data = data
-    train_data = data
-    valid_data = data
-    test_data = data
+    # train_data = data
+    # valid_data = data
+    # test_data = data
   
     data_feature = dataset.get_data_feature()
     # load executor
@@ -54,14 +54,16 @@ def run_model(task=None, model_name=None, dataset_name=None, config_file=None,
     print(config['model'])
     executor = get_executor(config, model, data_feature)
     # train
-    if train or not os.path.exists(model_cache_file):
+    if train: #or not os.path.exists(model_cache_file):
         executor.train(train_data, valid_data)
         if saved_model:
             executor.save_model(model_cache_file)
-    else:
-        executor.load_model(model_cache_file)
+    # else:
+    #     executor.load_model(model_cache_file)
     # evaluate and the result will be under cache/evaluate_cache
-    executor.evaluate(test_data)
+    # for epoch_idx in [ 1000-1]:
+    for epoch_idx in [ 50-1, 100-1, 500-1, 1000-1, 10000-1]:
+        executor.evaluate(test_data, epoch_idx)
     
 
 
