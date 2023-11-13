@@ -278,7 +278,7 @@ class DGIExecutor(AbstractExecutor):
         self._logger.info(f'Evaluate result macro_f1:{result["macro_f1"]}')
         self._logger.info(f'Evaluate Best test report: {result["report"]}')
         filename = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S') + '_' + \
-                    self.config['model'] + '_' + self.config['dataset']
+                    self.config['model'] + '_' + self.config['config_file'] + '_' + self.config['dataset']
         save_path = self.evaluate_res_dir
         with open(os.path.join(save_path, '{}_{}.json'.format(filename,epoch_idx)), 'w') as f:
             json.dump(result, f)
