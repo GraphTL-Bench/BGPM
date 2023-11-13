@@ -442,7 +442,7 @@ class SUGRLExecutor(AbstractExecutor):
             data = data.to(self.device)
             self.optimizer.zero_grad()
             A_I_nomal = self.normalize_graph(data)
-            A_degree = degree(A_I_nomal._indices()[0], data,
+            A_degree = degree(A_I_nomal._indices()[0], data.num_nodes,
                           dtype=int).tolist()
             edge_index = A_I_nomal._indices()[1]
 
