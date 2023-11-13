@@ -351,20 +351,7 @@ class SUGRLExecutor(AbstractExecutor):
         num_batches = len(train_dataloader)
         self._logger.info("num_batches:{}".format(num_batches))
 
-        A_I_nomal = self.normalize_graph(train_dataloader)
-        A_degree = degree(A_I_nomal._indices()[0], train_dataloader.num_nodes,
-                          dtype=int).tolist()
-        edge_index = A_I_nomal._indices()[1]
-
-        deg_list_2 = [0]
-        for i in range(train_dataloader.num_nodes):
-            deg_list_2.append(deg_list_2[-1] + A_degree[i])
-        self.idx_p_list = []
-        for j in range(1, 101):
-            random_list = [deg_list_2[i] + j % A_degree[i] for i in
-                           range(train_dataloader.num_nodes)]
-            idx_p = edge_index[random_list]
-            self.idx_p_list.append(idx_p)
+        
 
         for epoch_idx in range(self._epoch_num, self.epochs):
             start_time = time.time()
@@ -454,6 +441,20 @@ class SUGRLExecutor(AbstractExecutor):
         for data in train_dataloader:
             data = data.to(self.device)
             self.optimizer.zero_grad()
+            A_I_nomal = self.normalize_graph(data)
+            A_degree = degree(A_I_nomal._indices()[0], data,
+                          dtype=int).tolist()
+            edge_index = A_I_nomal._indices()[1]
+
+            deg_list_2 = [0]
+            for i in range(data.num_nodes):
+                deg_list_2.append(deg_list_2[-1] + A_degree[i])
+            self.idx_p_list = []
+            for j in range(1, 101):
+                random_list = [deg_list_2[i] + j % A_degree[i] for i in
+                            range(data.num_nodes)]
+                idx_p = edge_index[random_list]
+                self.idx_p_list.append(idx_p)
 
             idx_list = []
             for i in range(self.NN):
