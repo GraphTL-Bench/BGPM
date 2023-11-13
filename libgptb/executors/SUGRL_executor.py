@@ -279,16 +279,22 @@ class SUGRLExecutor(AbstractExecutor):
         #     self._logger.info('Evaluate result is saved at ' + os.path.join(save_path, '{}.json'.format(filename)))
         # return result
         self.load_model_with_epoch(epoch_idx)
+        x = []
+        y = []
         for data in dataloader:
             data = data.to(self.device)
             self.model.encoder_model.eval()
             adj = self.normalize_graph(data)
             _, embs = self.model.embed(data.x, adj)
             z = embs / embs.norm(dim=1)[:, None]
-            split = get_split(num_samples=z.size()[0], train_ratio=0.1, test_ratio=0.8, dataset=self.config['dataset'])
-            result = LREvaluator()(z, data.y, split)
-            print(f'(E): Best test F1Mi={result["micro_f1"]:.4f}, F1Ma={result["macro_f1"]:.4f}')
-            print(f'(E): Best test report {result["report"]}')
+            x.append(z)
+            y.append(data.y)
+        x = torch.cat(x, dim=0)
+        y = torch.cat(y, dim=0)
+        split = get_split(num_samples=x.size()[0], train_ratio=0.1, test_ratio=0.8, dataset=self.config['dataset'])
+        result = LREvaluator()(x, y, split)
+        print(f'(E): Best test F1Mi={result["micro_f1"]:.4f}, F1Ma={result["macro_f1"]:.4f}')
+        print(f'(E): Best test report {result["report"]}')
         self._logger.info(f'Evaluate result micro_f1:{result["micro_f1"]}')
         self._logger.info(f'Evaluate result macro_f1:{result["macro_f1"]}')
         self._logger.info(f'Evaluate Best test report: {result["report"]}')
