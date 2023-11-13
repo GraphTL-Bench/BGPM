@@ -419,7 +419,7 @@ class SUGRLExecutor(AbstractExecutor):
         return min_val_loss
 
     def normalize_graph(self, data):
-        device = data.x.device
+        device = self.device
         i = data.edge_index
         v = torch.FloatTensor(torch.ones([data.num_edges])).to(device)
         A_sp = torch.sparse.FloatTensor(i, v, torch.Size([data.num_nodes, data.num_nodes]))
@@ -457,12 +457,12 @@ class SUGRLExecutor(AbstractExecutor):
 
             idx_list = []
             for i in range(self.NN):
-                idx_0 = np.random.permutation(train_dataloader.num_nodes)
+                idx_0 = np.random.permutation(data.num_nodes)
                 idx_list.append(idx_0)
 
-            A_I_nomal = self.normalize_graph(train_dataloader)
+            A_I_nomal = self.normalize_graph(data)
 
-            h_a, h_p = self.model(train_dataloader.x, A_I_nomal)
+            h_a, h_p = self.model(data.x, A_I_nomal)
 
             h_p_1 = (h_a[self.idx_p_list[epoch_idx % 100]] + h_a[
                     self.idx_p_list[(epoch_idx + 2) % 100]] + h_a[
