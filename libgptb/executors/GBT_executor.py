@@ -242,7 +242,7 @@ class GBTExecutor(AbstractExecutor):
             return lf(y_predicted, y_true)
         return func
 
-    def evaluate(self, data):
+    def evaluate(self, dataloader ,epoch_idx):
         """
         use model to test data
 
@@ -265,22 +265,30 @@ class GBTExecutor(AbstractExecutor):
         #     json.dump(result, f)
         #     self._logger.info('Evaluate result is saved at ' + os.path.join(save_path, '{}.json'.format(filename)))
         # return result
-        for epoch_idx in [50-1, 100-1, 500-1, 1000-1, 10000-1]:
-            self.load_model_with_epoch(epoch_idx)
+        self.load_model_with_epoch(epoch_idx)
+        x = []
+        y = []
+        for data in dataloader:
+            data = data.to(self.device)
             self.model.encoder_model.eval()
             z, _, _ = self.model.encoder_model(data.x, data.edge_index)
-            split = get_split(num_samples=z.size()[0], train_ratio=0.1, test_ratio=0.8, dataset=self.config['dataset'])
-            result = LREvaluator()(z, data.y, split)
-            print(f'(E): Best test F1Mi={result["micro_f1"]:.4f}, F1Ma={result["macro_f1"]:.4f}')
-
-
-            self._logger.info('Evaluate result is ' + json.dumps(result))
-            filename = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S') + '_' + \
-                        self.config['model'] + '_' + self.config['dataset']
-            save_path = self.evaluate_res_dir
-            with open(os.path.join(save_path, '{}.json'.format(filename)), 'w') as f:
-                json.dump(result, f)
-                self._logger.info('Evaluate result is saved at ' + os.path.join(save_path, '{}.json'.format(filename)))
+            x.append(z)
+            y.append(data.y)
+        x = torch.cat(x, dim=0)
+        y = torch.cat(y, dim=0)
+        split = get_split(num_samples=x.size()[0], train_ratio=0.1, test_ratio=0.8, dataset=self.config['dataset'])
+        result = LREvaluator()(x, y, split)
+        print(f'(E): Best test F1Mi={result["micro_f1"]:.4f}, F1Ma={result["macro_f1"]:.4f}')
+        print(f'(E): Best test report {result["report"]}')
+        self._logger.info(f'Evaluate result micro_f1:{result["micro_f1"]}')
+        self._logger.info(f'Evaluate result macro_f1:{result["macro_f1"]}')
+        self._logger.info(f'Evaluate Best test report: {result["report"]}')
+        filename = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S') + '_' + \
+                    self.config['model'] + '_' + self.config['dataset']
+        save_path = self.evaluate_res_dir
+        with open(os.path.join(save_path, '{}_{}.json'.format(filename,epoch_idx)), 'w') as f:
+            json.dump(result, f)
+            self._logger.info('Evaluate result is saved at ' + os.path.join(save_path, '{}.json'.format(filename)))
         
         # with torch.no_grad():
         #     self.model.eval()
@@ -392,15 +400,18 @@ class GBTExecutor(AbstractExecutor):
         """
         # self.model.encoder_model.train()
         self.model.encoder_model.train()
-        # loss_func = loss_func if loss_func is not None else self.model.calculate_loss
-        self.optimizer.zero_grad()
-        _, z1, z2  = self.model.encoder_model(train_dataloader.x, train_dataloader.edge_index)
-        loss = self.model.contrast_model(z1, z2)
-        # loss = loss_func(batch)
-        self._logger.debug(loss.item())
-        loss.backward()
-        self.optimizer.step()
-        return loss.item()
+        total_loss = 0
+        for data in train_dataloader:
+            data = data.to(self.device)
+            self.optimizer.zero_grad()
+            _, z1, z2  = self.model.encoder_model(data.x, data.edge_index)
+            loss = self.model.contrast_model(z1, z2)
+            # loss = loss_func(batch)
+            self._logger.debug(loss.item())
+            total_loss += loss.item() * data.num_graphs
+            loss.backward()
+            self.optimizer.step()
+        return total_loss / len(train_dataloader.dataset)
 
     # def _valid_epoch(self, eval_dataloader, epoch_idx, loss_func=None):
     #     """
