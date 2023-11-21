@@ -245,7 +245,7 @@ class CCAExecutor(AbstractExecutor):
             return lf(y_predicted, y_true)
         return func
 
-    def evaluate(self, data):
+    def evaluate(self, dataloader, epoch_idx):
         """
         use model to test data
 
@@ -253,76 +253,35 @@ class CCAExecutor(AbstractExecutor):
             test_dataloader(torch.Dataloader): Dataloader
         """
         self._logger.info('Start evaluating ...')
-        # self.model.encoder_model.eval()
-        # graph = data
-        # feat = graph.ndata['feat']
-        # graph = graph.remove_self_loop().add_self_loop().to(self.device)
-        # feat = feat.to(self.device)
-        # z = self.model.gconv(graph, feat)
-        # split = get_split(num_samples=z.size()[0], train_ratio=0.1, test_ratio=0.8, dataset=self.config['dataset'])
-        # labels = graph.ndata['label']
-
-        # result = LREvaluator()(z, labels, split)
-        # print(f'(E): Best test F1Mi={result["micro_f1"]:.4f}, F1Ma={result["macro_f1"]:.4f}')
-
-
-        # self._logger.info('Evaluate result is ' + json.dumps(result))
-        # filename = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S') + '_' + \
-        #                self.config['model'] + '_' + self.config['dataset']
-        # save_path = self.evaluate_res_dir
-        # with open(os.path.join(save_path, '{}.json'.format(filename)), 'w') as f:
-        #     json.dump(result, f)
-        #     self._logger.info('Evaluate result is saved at ' + os.path.join(save_path, '{}.json'.format(filename)))
-        # return result
-        for epoch_idx in [50-1, 100-1, 500-1, 1000-1, 10000-1]:
-            self.load_model_with_epoch(epoch_idx)
-            self.model.encoder_model.eval()
+        self.load_model_with_epoch(epoch_idx)
+        self.model.encoder_model.eval()
+        x = []
+        y = []
+        for data in dataloader:
+            data = data.to(self.device)
             graph = data
             feat = graph.ndata['feat']
             graph = graph.remove_self_loop().add_self_loop().to(self.device)
             feat = feat.to(self.device)
-            z = self.model.gconv(graph, feat)
-            split = get_split(num_samples=z.size()[0], train_ratio=0.1, test_ratio=0.8, dataset=self.config['dataset'])
             labels = graph.ndata['label']
-
-            result = LREvaluator()(z, labels, split)
-            print(f'(E): Best test F1Mi={result["micro_f1"]:.4f}, F1Ma={result["macro_f1"]:.4f}')
-
-
-            self._logger.info('Evaluate result is ' + json.dumps(result))
-            filename = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S') + '_' + \
-                        self.config['model'] + '_' + self.config['dataset']
-            save_path = self.evaluate_res_dir
-            with open(os.path.join(save_path, '{}.json'.format(filename)), 'w') as f:
-                json.dump(result, f)
-                self._logger.info('Evaluate result is saved at ' + os.path.join(save_path, '{}.json'.format(filename)))
-        
-        # with torch.no_grad():
-        #     self.model.eval()
-        #     # self.evaluator.clear()
-        #     y_truths = []
-        #     y_preds = []
-        #     for batch in test_dataloader:
-        #         batch.to_tensor(self.device)
-        #         output = self.model.predict(batch)
-        #         y_true = self._scaler.inverse_transform(batch['y'][..., :self.output_dim])
-        #         y_pred = self._scaler.inverse_transform(output[..., :self.output_dim])
-        #         y_truths.append(y_true.cpu().numpy())
-        #         y_preds.append(y_pred.cpu().numpy())
-        #         # evaluate_input = {'y_true': y_true, 'y_pred': y_pred}
-        #         # self.evaluator.collect(evaluate_input)
-        #     # self.evaluator.save_result(self.evaluate_res_dir)
-        #     y_preds = np.concatenate(y_preds, axis=0)
-        #     y_truths = np.concatenate(y_truths, axis=0)  # concatenate on batch
-        #     outputs = {'prediction': y_preds, 'truth': y_truths}
-        #     filename = \
-        #         time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime(time.time())) + '_' \
-        #         + self.config['model'] + '_' + self.config['dataset'] + '_predictions.npz'
-        #     np.savez_compressed(os.path.join(self.evaluate_res_dir, filename), **outputs)
-        #     self.evaluator.clear()
-        #     self.evaluator.collect({'y_true': torch.tensor(y_truths), 'y_pred': torch.tensor(y_preds)})
-        #     test_result = self.evaluator.save_result(self.evaluate_res_dir)
-        #     return test_result
+            z = self.model.gconv(graph, feat)
+            x.append(z)
+            y.append(labels)
+        x = torch.cat(x, dim=0)
+        y = torch.cat(y, dim=0)
+        split = get_split(num_samples=x.size()[0], train_ratio=0.1, test_ratio=0.8, dataset=self.config['dataset'])
+        result = LREvaluator()(x, y, split)
+        print(f'(E): Best test F1Mi={result["micro_f1"]:.4f}, F1Ma={result["macro_f1"]:.4f}')
+        print(f'(E): Best test report {result["report"]}')
+        self._logger.info(f'Evaluate result micro_f1:{result["micro_f1"]}')
+        self._logger.info(f'Evaluate result macro_f1:{result["macro_f1"]}')
+        self._logger.info(f'Evaluate Best test report: {result["report"]}')
+        filename = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S') + '_' + \
+                    self.config['model'] + '_' + self.config['dataset']
+        save_path = self.evaluate_res_dir
+        with open(os.path.join(save_path, '{}_{}.json'.format(filename,epoch_idx)), 'w') as f:
+            json.dump(result, f)
+            self._logger.info('Evaluate result is saved at ' + os.path.join(save_path, '{}.json'.format(filename)))
 
     def train(self, train_dataloader, eval_dataloader):
         """
@@ -340,25 +299,12 @@ class CCAExecutor(AbstractExecutor):
         eval_time = []
         # num_batches = len(train_dataloader)
         # self._logger.info("num_batches:{}".format(num_batches))
-        graph = train_dataloader
-        feat = graph.ndata['feat']
-
-        edgeremove = EdgeRemovingDGL(self.dfr)
-        featmask = FeatureMaskingDGL(self.der)
+        
 
         for epoch_idx in range(self._epoch_num, self.epochs):
             start_time = time.time()
-            graph1 = edgeremove.augment(graph)
-            graph2 = edgeremove.augment(graph)
-            feat1 = featmask.augment(feat)
-            feat2 = featmask.augment(feat)
 
-            graph1 = graph1.add_self_loop().to(self.device)
-            graph2 = graph2.add_self_loop().to(self.device)
-            feat1 = feat1.to(self.device)
-            feat2 = feat2.to(self.device)
-
-            losses = self._train_epoch(graph1, graph2, feat1, feat2, epoch_idx, self.loss_func)
+            losses = self._train_epoch(train_dataloader,epoch_idx, self.loss_func)
             t1 = time.time()
             train_time.append(t1 - start_time)
             self._writer.add_scalar('training loss', np.mean(losses), epoch_idx)
@@ -408,7 +354,7 @@ class CCAExecutor(AbstractExecutor):
             self.load_model_with_epoch(best_epoch)
         return min_val_loss
 
-    def _train_epoch(self, graph1, graph2, feat1, feat2, epoch_idx, loss_func=None):
+    def _train_epoch(self,train_dataloader,epoch_idx, loss_func=None):
         """
         完成模型一个轮次的训练
 
@@ -423,14 +369,32 @@ class CCAExecutor(AbstractExecutor):
         # self.model.encoder_model.train()
         self.model.encoder_model.train()
         # loss_func = loss_func if loss_func is not None else self.model.calculate_loss
-        self.optimizer.zero_grad()
-        z1, z2 = self.model.encoder_model(graph1, graph2, feat1, feat2)
-        loss = self.model.contrast_model(z1, z2)
-        # loss = loss_func(batch)
-        self._logger.debug(loss.item())
-        loss.backward()
-        self.optimizer.step()
-        return loss.item()
+        total_loss = 0
+        for data in train_dataloader:
+            # data = data.to(self.device)
+            self.optimizer.zero_grad()
+
+            edgeremove = EdgeRemovingDGL(self.dfr)
+            featmask = FeatureMaskingDGL(self.der)
+            graph = data
+            feat = graph.ndata['feat']
+            graph1 = edgeremove.augment(graph)
+            graph2 = edgeremove.augment(graph)
+            feat1 = featmask.augment(feat)
+            feat2 = featmask.augment(feat)
+
+            graph1 = graph1.add_self_loop().to(self.device)
+            graph2 = graph2.add_self_loop().to(self.device)
+            feat1 = feat1.to(self.device)
+            feat2 = feat2.to(self.device)
+            z1, z2 = self.model.encoder_model(graph1, graph2, feat1, feat2)
+            loss = self.model.contrast_model(z1, z2)
+            # loss = loss_func(batch)
+            self._logger.debug(loss.item())
+            total_loss += loss.item()
+            loss.backward()
+            self.optimizer.step()
+        return total_loss / len(train_dataloader.dataset)
 
     # def _valid_epoch(self, eval_dataloader, epoch_idx, loss_func=None):
     #     """

@@ -253,7 +253,7 @@ class SUGRLExecutor(AbstractExecutor):
             return lf(y_predicted, y_true)
         return func
 
-    def evaluate(self, data):
+    def evaluate(self, dataloader, epoch_idx):
         """
         use model to test data
 
@@ -278,24 +278,34 @@ class SUGRLExecutor(AbstractExecutor):
         #     json.dump(result, f)
         #     self._logger.info('Evaluate result is saved at ' + os.path.join(save_path, '{}.json'.format(filename)))
         # return result
-        for epoch_idx in [50-1, 100-1, 500-1, 1000-1, 10000-1]:
-            self.load_model_with_epoch(epoch_idx)
+        self.load_model_with_epoch(epoch_idx)
+        x = []
+        y = []
+        for data in dataloader:
+            data = data.to(self.device)
             self.model.encoder_model.eval()
             adj = self.normalize_graph(data)
             _, embs = self.model.embed(data.x, adj)
             z = embs / embs.norm(dim=1)[:, None]
-            split = get_split(num_samples=z.size()[0], train_ratio=0.1, test_ratio=0.8, dataset=self.config['dataset'])
-            result = LREvaluator()(z, data.y, split)
-            print(f'(E): Best test F1Mi={result["micro_f1"]:.4f}, F1Ma={result["macro_f1"]:.4f}')
+            x.append(z)
+            y.append(data.y)
+        x = torch.cat(x, dim=0)
+        y = torch.cat(y, dim=0)
+        split = get_split(num_samples=x.size()[0], train_ratio=0.1, test_ratio=0.8, dataset=self.config['dataset'])
+        result = LREvaluator()(x, y, split)
+        print(f'(E): Best test F1Mi={result["micro_f1"]:.4f}, F1Ma={result["macro_f1"]:.4f}')
+        print(f'(E): Best test report {result["report"]}')
+        self._logger.info(f'Evaluate result micro_f1:{result["micro_f1"]}')
+        self._logger.info(f'Evaluate result macro_f1:{result["macro_f1"]}')
+        self._logger.info(f'Evaluate Best test report: {result["report"]}')
 
-
-            self._logger.info('Evaluate result is ' + json.dumps(result))
-            filename = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S') + '_' + \
-                        self.config['model'] + '_' + self.config['dataset']
-            save_path = self.evaluate_res_dir
-            with open(os.path.join(save_path, '{}.json'.format(filename)), 'w') as f:
-                json.dump(result, f)
-                self._logger.info('Evaluate result is saved at ' + os.path.join(save_path, '{}.json'.format(filename)))
+        self._logger.info('Evaluate result is ' + json.dumps(result))
+        filename = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S') + '_' + \
+                    self.config['model'] + '_' + self.config['config_file'] + '_' + self.config['dataset']
+        save_path = self.evaluate_res_dir
+        with open(os.path.join(save_path, '{}.json'.format(filename)), 'w') as f:
+            json.dump(result, f)
+            self._logger.info('Evaluate result is saved at ' + os.path.join(save_path, '{}.json'.format(filename)))
         
         # with torch.no_grad():
         #     self.model.eval()
@@ -341,20 +351,7 @@ class SUGRLExecutor(AbstractExecutor):
         num_batches = len(train_dataloader)
         self._logger.info("num_batches:{}".format(num_batches))
 
-        A_I_nomal = self.normalize_graph(train_dataloader)
-        A_degree = degree(A_I_nomal._indices()[0], train_dataloader.num_nodes,
-                          dtype=int).tolist()
-        edge_index = A_I_nomal._indices()[1]
-
-        deg_list_2 = [0]
-        for i in range(train_dataloader.num_nodes):
-            deg_list_2.append(deg_list_2[-1] + A_degree[i])
-        self.idx_p_list = []
-        for j in range(1, 101):
-            random_list = [deg_list_2[i] + j % A_degree[i] for i in
-                           range(train_dataloader.num_nodes)]
-            idx_p = edge_index[random_list]
-            self.idx_p_list.append(idx_p)
+        
 
         for epoch_idx in range(self._epoch_num, self.epochs):
             start_time = time.time()
@@ -409,7 +406,7 @@ class SUGRLExecutor(AbstractExecutor):
         return min_val_loss
 
     def normalize_graph(self, data):
-        device = data.x.device
+        device = self.device
         i = data.edge_index
         v = torch.FloatTensor(torch.ones([data.num_edges])).to(device)
         A_sp = torch.sparse.FloatTensor(i, v, torch.Size([data.num_nodes, data.num_nodes]))
@@ -440,44 +437,63 @@ class SUGRLExecutor(AbstractExecutor):
             list: 每个batch的损失的数组
         """
         self.model.train()
-        self.optimizer.zero_grad()
-        idx_list = []
-        for i in range(self.NN):
-            idx_0 = np.random.permutation(train_dataloader.num_nodes)
-            idx_list.append(idx_0)
+        total_loss = 0
+        for data in train_dataloader:
+            data = data.to(self.device)
+            self.optimizer.zero_grad()
+            A_I_nomal = self.normalize_graph(data)
+            A_degree = degree(A_I_nomal._indices()[0], data.num_nodes, dtype=int).tolist()
+            edge_index = A_I_nomal._indices()[1]
 
-        A_I_nomal = self.normalize_graph(train_dataloader)
+            deg_list_2 = [0]
+            for i in range(data.num_nodes):
+                deg_list_2.append(deg_list_2[-1] + A_degree[i])
+            self.idx_p_list = []
+            for j in range(1, 101):
+                random_list = [deg_list_2[i] + j % A_degree[i] for i in
+                            range(data.num_nodes)]
+                idx_p = edge_index[random_list]
+                self.idx_p_list.append(idx_p)
 
-        h_a, h_p = self.model(train_dataloader.x, A_I_nomal)
+            idx_list = []
+            for i in range(self.NN):
+                idx_0 = np.random.permutation(data.num_nodes)
+                idx_list.append(idx_0)
 
-        h_p_1 = (h_a[self.idx_p_list[epoch_idx % 100]] + h_a[
-                 self.idx_p_list[(epoch_idx + 2) % 100]] + h_a[
-                 self.idx_p_list[(epoch_idx + 4) % 100]] + h_a[
-                 self.idx_p_list[(epoch_idx + 6) % 100]] + h_a[
-                 self.idx_p_list[(epoch_idx + 8) % 100]]) / 5
-        s_p = F.pairwise_distance(h_a, h_p)
-        s_p_1 = F.pairwise_distance(h_a, h_p_1)
-        s_n_list = []
-        for h_n in idx_list:
-            s_n = F.pairwise_distance(h_a, h_a[h_n])
-            s_n_list.append(s_n)
-        margin_label = -1 * torch.ones_like(s_p)
+            A_I_nomal = self.normalize_graph(data)
 
-        loss_mar = 0
-        loss_mar_1 = 0
-        mask_margin_N = 0
-        for s_n in s_n_list:
-            loss_mar += (self.margin_loss(s_p, s_n, margin_label)).mean()
-            loss_mar_1 += (self.margin_loss(s_p_1, s_n, margin_label)).mean()
-            mask_margin_N += torch.max((s_n - s_p.detach() - self.my_margin_2),
-                                       torch.tensor([0.]).to(self.device)).sum()
-        mask_margin_N = mask_margin_N / self.NN
+            h_a, h_p = self.model(data.x, A_I_nomal)
 
-        loss = loss_mar * self.w_loss1 + loss_mar_1 * self.w_loss2 + mask_margin_N * self.w_loss3
-        loss.backward()
-        self.optimizer.step()
+            h_p_1 = (h_a[self.idx_p_list[epoch_idx % 100]] + h_a[
+                    self.idx_p_list[(epoch_idx + 2) % 100]] + h_a[
+                    self.idx_p_list[(epoch_idx + 4) % 100]] + h_a[
+                    self.idx_p_list[(epoch_idx + 6) % 100]] + h_a[
+                    self.idx_p_list[(epoch_idx + 8) % 100]]) / 5
+            s_p = F.pairwise_distance(h_a, h_p)
+            s_p_1 = F.pairwise_distance(h_a, h_p_1)
+            s_n_list = []
+            for h_n in idx_list:
+                s_n = F.pairwise_distance(h_a, h_a[h_n])
+                s_n_list.append(s_n)
+            margin_label = -1 * torch.ones_like(s_p)
 
-        return loss.item()
+            loss_mar = 0
+            loss_mar_1 = 0
+            mask_margin_N = 0
+            for s_n in s_n_list:
+                loss_mar += (self.margin_loss(s_p, s_n, margin_label)).mean()
+                loss_mar_1 += (self.margin_loss(s_p_1, s_n, margin_label)).mean()
+                mask_margin_N += torch.max((s_n - s_p.detach() - self.my_margin_2),
+                                        torch.tensor([0.]).to(self.device)).sum()
+            mask_margin_N = mask_margin_N / self.NN
+
+            loss = loss_mar * self.w_loss1 + loss_mar_1 * self.w_loss2 + mask_margin_N * self.w_loss3
+            # loss = loss_func(batch)
+            self._logger.debug(loss.item())
+            total_loss += loss.item() * data.num_graphs
+            loss.backward()
+            self.optimizer.step()
+        return total_loss / len(train_dataloader.dataset)
 
     # def _valid_epoch(self, eval_dataloader, epoch_idx, loss_func=None):
     #     """
