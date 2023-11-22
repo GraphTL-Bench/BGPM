@@ -63,7 +63,7 @@ def run_model(task=None, model_name=None, dataset_name=None, config_file=None,
     # evaluate and the result will be under cache/evaluate_cache
     # for epoch_idx in [ 1000-1]:
     for epoch_idx in [ 50-1, 100-1, 500-1, 1000-1, 10000-1]:
-        executor.evaluate(test_data, epoch_idx)
+        executor.evaluate(train_data, epoch_idx)
     
 
 
