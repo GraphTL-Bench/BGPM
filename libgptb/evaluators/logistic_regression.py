@@ -68,14 +68,14 @@ class LREvaluator(BaseEvaluator):
                     # y_test, y_pred = torch.cat(y_test, dim=0).numpy(), torch.cat(y_pred, dim=0).numpy()
                     # print(f'y_pred size = {y_pred.dtype}')
                     # print(f'y_pred[0] = {y_pred[0]}')
-                    if (epoch + 1) % 1000 == 0:
-                        print ('Train loss')
-                        print(classification_report(y_test, y_pred))
+                    # if (epoch + 1) % 1000 == 0:
+                    #     print ('Train loss')
+                    #     print(classification_report(y_test, y_pred))
                     test_micro = f1_score(y_test, (y_pred),average='micro')
                     test_macro = f1_score(y_test, (y_pred),average='macro')
 
-                    y_val = y[split['valid']].detach().cpu().numpy()
-                    y_pred = (classifier(x[split['valid']]) > 0).detach().cpu().numpy()
+                    y_val = y[split['valid']][25, 30, 26, 0, 12, 28, 117, 32, 116, 118].detach().cpu().numpy()
+                    y_pred = (classifier(x[split['valid']]) > 0)[25, 30, 26, 0, 12, 28, 117, 32, 116, 118].detach().cpu().numpy()
                     # y_pred = np.around(y_pred,0)
                     val_micro = f1_score(y_val, y_pred,average='micro')
 
