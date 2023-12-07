@@ -5,6 +5,8 @@ import copy
 
 from libgptb.data.list_dataset import ListDataset
 from libgptb.data.batch import Batch, BatchPAD
+import torch
+from torch_geometric.data import InMemoryDataset, download_url
 
 
 def get_dataset(config):
@@ -28,102 +30,88 @@ def get_dataset(config):
             raise AttributeError('dataset_class is not found')
 
 
-def generate_dataloader(train_data, eval_data, test_data, feature_name,
-                        batch_size, num_workers, shuffle=True,
-                        pad_with_last_sample=False):
-    """
-    create dataloader(train/test/eval)
+def load_pcg(data_name, split_name, train_percent, path="../data/"):
+    print('Loading dataset ' + data_name + '.csv...')
 
-    Args:
-        train_data(list of input): 训练数据，data 中每个元素是模型单次的输入，input 是一个 list，里面存放单次输入和 target
-        eval_data(list of input): 验证数据，data 中每个元素是模型单次的输入，input 是一个 list，里面存放单次输入和 target
-        test_data(list of input): 测试数据，data 中每个元素是模型单次的输入，input 是一个 list，里面存放单次输入和 target
-        feature_name(dict): 描述上面 input 每个元素对应的特征名, 应保证len(feature_name) = len(input)
-        batch_size(int): batch_size
-        num_workers(int): num_workers
-        shuffle(bool): shuffle
-        pad_with_last_sample(bool): 对于若最后一个 batch 不满足 batch_size的情况，是否进行补齐（使用最后一个元素反复填充补齐）。
+    labels = np.genfromtxt(os.path.join(path, data_name, "labels.csv"),
+                           dtype=np.dtype(float), delimiter=',')
+    labels = torch.tensor(labels).float()
+    features = torch.tensor(np.genfromtxt(os.path.join(path, data_name, "features.csv"),
+                            dtype=np.dtype(float), delimiter=',')).float()
 
-    Returns:
-        tuple: tuple contains:
-            train_dataloader: Dataloader composed of Batch (class) \n
-            eval_dataloader: Dataloader composed of Batch (class) \n
-            test_dataloader: Dataloader composed of Batch (class)
-    """
-    if pad_with_last_sample:
-        num_padding = (batch_size - (len(train_data) % batch_size)) % batch_size
-        data_padding = np.repeat(train_data[-1:], num_padding, axis=0)
-        train_data = np.concatenate([train_data, data_padding], axis=0)
-        num_padding = (batch_size - (len(eval_data) % batch_size)) % batch_size
-        data_padding = np.repeat(eval_data[-1:], num_padding, axis=0)
-        eval_data = np.concatenate([eval_data, data_padding], axis=0)
-        num_padding = (batch_size - (len(test_data) % batch_size)) % batch_size
-        data_padding = np.repeat(test_data[-1:], num_padding, axis=0)
-        test_data = np.concatenate([test_data, data_padding], axis=0)
+    edges = torch.tensor(np.genfromtxt(os.path.join(path, data_name, "edges_undir.csv"),
+                                       dtype=np.dtype(float), delimiter=','))
+    edge_index = torch.transpose(edges, 0, 1).long()
+    edge_weight = torch.sum(labels[edge_index[0, :]] * labels[edge_index[1, :]], 1).float()
 
-    train_dataset = ListDataset(train_data)
-    eval_dataset = ListDataset(eval_data)
-    test_dataset = ListDataset(test_data)
+    folder_name = data_name + "_" + str(train_percent)
+    file_path = os.path.join(path, folder_name, split_name)
+    masks = torch.load(file_path)
+    train_idx = masks["train_mask"]
+    train_mask = torch.zeros(features.shape[0], dtype=torch.bool)
+    train_mask[train_idx] = True
 
-    def collator(indices):
-        batch = Batch(feature_name)
-        for item in indices:
-            batch.append(copy.deepcopy(item))
-        return batch
+    val_idx = masks["val_mask"]
+    val_mask = torch.zeros(features.shape[0], dtype=torch.bool)
+    val_mask[val_idx] = True
 
-    train_dataloader = DataLoader(dataset=train_dataset, batch_size=batch_size,
-                                  num_workers=num_workers, collate_fn=collator,
-                                  shuffle=shuffle)
-    eval_dataloader = DataLoader(dataset=eval_dataset, batch_size=batch_size,
-                                 num_workers=num_workers, collate_fn=collator,
-                                 shuffle=shuffle)
-    test_dataloader = DataLoader(dataset=test_dataset, batch_size=batch_size,
-                                 num_workers=num_workers, collate_fn=collator,
-                                 shuffle=False)
-    return train_dataloader, eval_dataloader, test_dataloader
+    test_idx = masks["test_mask"]
+    test_mask = torch.zeros(features.shape[0], dtype=torch.bool)
+    test_mask[test_idx] = True
+    #print(test_mask[:5])
+
+    y = labels.clone().detach().float()
+    y[val_mask] = torch.full((1, labels.shape[1]), 1 / labels.shape[1])
+    y[test_mask] = torch.full((1, labels.shape[1]), 1 / labels.shape[1])
+
+    #num_class = labels.shape[1]
+    #num_nodes = labels.shape[0]
+
+    G = Data(x=features,
+             edge_index=edge_index,
+             edge_attr=edge_weight,
+             y=labels)
+    # G.train_mask = train_mask
+    # G.val_mask = val_mask
+    # G.test_mask = test_mask
+    # G.soft_labels = y
+
+    #return edge_weight, edge_index, features, labels, y, train_mask, val_mask, test_mask, num_class, num_nodes
+    return G
 
 
-def generate_dataloader_pad(train_data, eval_data, test_data, feature_name,
-                            batch_size, num_workers, pad_item=None,
-                            pad_max_len=None, shuffle=True):
-    """
-    create dataloader(train/test/eval)
 
-    Args:
-        train_data(list of input): 训练数据，data 中每个元素是模型单次的输入，input 是一个 list，里面存放单次输入和 target
-        eval_data(list of input): 验证数据，data 中每个元素是模型单次的输入，input 是一个 list，里面存放单次输入和 target
-        test_data(list of input): 测试数据，data 中每个元素是模型单次的输入，input 是一个 list，里面存放单次输入和 target
-        feature_name(dict): 描述上面 input 每个元素对应的特征名, 应保证len(feature_name) = len(input)
-        batch_size(int): batch_size
-        num_workers(int): num_workers
-        pad_item(dict): 用于将不定长的特征补齐到一样的长度，每个特征名作为 key，若某特征名不在该 dict 内则不进行补齐。
-        pad_max_len(dict): 用于截取不定长的特征，对于过长的特征进行剪切
-        shuffle(bool): shuffle
+#这里给出大家注释方便理解
+class PcgDataset(InMemoryDataset):
+    def __init__(self, root, transform=None, pre_transform=None):
+        super().__init__(root, transform, pre_transform)
+        self.data, self.slices = torch.load(self.processed_paths[0])
+    #返回数据集源文件名
+    @property
+    def raw_file_names(self):
+        return ['some_file_1', 'some_file_2', ...]
+    #返回process方法所需的保存文件名。你之后保存的数据集名字和列表里的一致
+    @property
+    def processed_file_names(self):
+        return ['Pcg.pt']
+    # #用于从网上下载数据集
+    # def download(self):
+    #     # Download to `self.raw_dir`.
+    #     download_url(url, self.raw_dir)
+        ...
+    #生成数据集所用的方法
+    def process(self):
+        # Read data into huge `Data` list.
 
-    Returns:
-        tuple: tuple contains:
-            train_dataloader: Dataloader composed of Batch (class) \n
-            eval_dataloader: Dataloader composed of Batch (class) \n
-            test_dataloader: Dataloader composed of Batch (class)
-    """
-    train_dataset = ListDataset(train_data)
-    eval_dataset = ListDataset(eval_data)
-    test_dataset = ListDataset(test_data)
+        data = load_pcg(pcg_removed_isolated_nodes,split_0.pt,0.6) #Data(x=x, edge_index=edge_index, y=Y)
+        # 放入datalist
+        data_list = [data]
 
-    def collator(indices):
-        batch = BatchPAD(feature_name, pad_item, pad_max_len)
-        for item in indices:
-            batch.append(copy.deepcopy(item))
-        batch.padding()
-        return batch
+        if self.pre_filter is not None:
+            data_list = [data for data in data_list if self.pre_filter(data)]
 
-    train_dataloader = DataLoader(dataset=train_dataset, batch_size=batch_size,
-                                  num_workers=num_workers, collate_fn=collator,
-                                  shuffle=shuffle)
-    eval_dataloader = DataLoader(dataset=eval_dataset, batch_size=batch_size,
-                                 num_workers=num_workers, collate_fn=collator,
-                                 shuffle=shuffle)
-    test_dataloader = DataLoader(dataset=test_dataset, batch_size=batch_size,
-                                 num_workers=num_workers, collate_fn=collator,
-                                 shuffle=shuffle)
-    return train_dataloader, eval_dataloader, test_dataloader
+        if self.pre_transform is not None:
+            data_list = [self.pre_transform(data) for data in data_list]
+
+        data, slices = self.collate(data_list)
+        torch.save((data, slices), self.processed_paths[0])

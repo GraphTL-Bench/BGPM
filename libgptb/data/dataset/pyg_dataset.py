@@ -8,6 +8,7 @@ from logging import getLogger
 import torch_geometric.transforms as T
 from libgptb.data.dataset.abstract_dataset import AbstractDataset
 import importlib
+from libgptb.data.utils import PcgDataset
 
 
 class PyGDataset(AbstractDataset):
@@ -26,7 +27,14 @@ class PyGDataset(AbstractDataset):
             pyg = getattr(importlib.import_module('torch_geometric.datasets'), 'Amazon')
         if self.datasetName in ["CS", "Physics"]:
             pyg = getattr(importlib.import_module('torch_geometric.datasets'), 'Coauthor')
-        self.dataset = pyg(path, name=self.datasetName, transform=T.NormalizeFeatures())
+
+        if self.datasetName in ["Cora", "CiteSeer", "PubMed","Computers", "Photo","CS", "Physics"]    
+            self.dataset = pyg(path, name=self.datasetName, transform=T.NormalizeFeatures())
+
+        if self.datasetName in ["pcg"]:
+            self.dataset = PcgDataset(path,name, name=self.datasetName, transform=T.NormalizeFeatures())
+
+
         self.data = self.dataset[0].to(device)
         
     
