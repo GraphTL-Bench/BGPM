@@ -63,7 +63,6 @@ class LREvaluator(BaseEvaluator):
                     classifier.eval()
                     y_test = y[split['test']].detach().cpu().numpy()
                     y_pred = (classifier(x[split['test']])).detach().cpu().numpy()
-                    
                     test_micro,test_macro = f1_loss(y_test,y_pred)
                     # test_macro = f1_score(y_test, pred_transformed,average='macro')
 
@@ -91,7 +90,7 @@ class LREvaluator(BaseEvaluator):
 
                         # convert back to binary vectors
                         pred_transformed = MultiLabelBinarizer(classes=range(num_classes)).fit_transform(pred_reshaped)
-                        report = classification_report(y_test, pred_transformed)
+                        report = classification_report(y_test.astype(np.int64), pred_transformed)
 
                     pbar.set_postfix({'best test F1Mi': best_test_micro, 'F1Ma': best_test_macro})
                     pbar.update(self.test_interval)
@@ -106,9 +105,9 @@ def f1_loss(y, predictions):
     #y = y.detach().cpu().numpy()
     #predictions = predictions.detach().cpu().numpy()
     number_of_labels = y.shape[1]
+    y = y.astype(np.int64)
     # find the indices (labels) with the highest probabilities (ascending order)
     pred_sorted = np.argsort(predictions, axis=1)
-
     # the true number of labels for each node
     num_labels = np.sum(y, axis=1)
     # we take the best k label predictions for all nodes, where k is the true number of labels
@@ -118,6 +117,7 @@ def f1_loss(y, predictions):
 
     # convert back to binary vectors
     pred_transformed = MultiLabelBinarizer(classes=range(number_of_labels)).fit_transform(pred_reshaped)
+    # print(f'pred_transformed {pred_transformed[0]}')
     f1_micro = f1_score(y, pred_transformed, average='micro')
     f1_macro = f1_score(y, pred_transformed, average='macro')
     return f1_micro, f1_macro

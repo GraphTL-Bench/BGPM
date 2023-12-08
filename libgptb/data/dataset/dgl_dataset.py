@@ -8,7 +8,7 @@ from logging import getLogger
 from libgptb.data.dataset.abstract_dataset import AbstractDataset
 import importlib
 import dgl
-
+from libgptb.data.dgl_utils import PcgDataset,EuklocDataset,HumlocDataset
 
 class DGLDataset(AbstractDataset):
     def __init__(self, config):
@@ -18,7 +18,7 @@ class DGLDataset(AbstractDataset):
 
     def _load_data(self):
         device = torch.device('cuda')
-        path = osp.join(osp.expanduser('~'), 'datasets')
+        path = osp.join(os.getcwd(), 'raw_data')
 
 
         if self.datasetName in ["Cora", "CiteSeer", "PubMed"]:
@@ -30,7 +30,15 @@ class DGLDataset(AbstractDataset):
                 dgl = getattr(importlib.import_module('dgl.data'), f'AmazonCoBuy{self.datasetName}Dataset')
         if self.datasetName in ["CS", "Physics"]:
             dgl = getattr(importlib.import_module('dgl.data'), f'Coauthor{self.datasetName}Dataset')
-        self.dataset = dgl(path)
+        if self.datasetName in ["Cora", "CiteSeer", "PubMed","Computers", "Photo","CS", "Physics"]:    
+            self.dataset = dgl(path)
+
+        if self.datasetName in ["pcg"]:
+            self.dataset = PcgDataset(path)
+        if self.datasetName in ["humloc"]:
+            self.dataset = HumlocDataset(path)
+        if self.datasetName in ["eukloc"]:
+            self.dataset = EuklocDataset(path)
         
         self.data = self.dataset[0]
     
