@@ -8,7 +8,7 @@ from logging import getLogger
 import torch_geometric.transforms as T
 from libgptb.data.dataset.abstract_dataset import AbstractDataset
 import importlib
-from libgptb.data.utils import PcgDataset
+from libgptb.data.utils import PcgDataset,EuklocDataset,HumlocDataset
 
 
 class PyGDataset(AbstractDataset):
@@ -28,11 +28,15 @@ class PyGDataset(AbstractDataset):
         if self.datasetName in ["CS", "Physics"]:
             pyg = getattr(importlib.import_module('torch_geometric.datasets'), 'Coauthor')
 
-        if self.datasetName in ["Cora", "CiteSeer", "PubMed","Computers", "Photo","CS", "Physics"]    
+        if self.datasetName in ["Cora", "CiteSeer", "PubMed","Computers", "Photo","CS", "Physics"]:    
             self.dataset = pyg(path, name=self.datasetName, transform=T.NormalizeFeatures())
 
         if self.datasetName in ["pcg"]:
-            self.dataset = PcgDataset(path,name, name=self.datasetName, transform=T.NormalizeFeatures())
+            self.dataset = PcgDataset(path, transform=T.NormalizeFeatures())
+        if self.datasetName in ["humloc"]:
+            self.dataset = HumlocDataset(path, transform=T.NormalizeFeatures())
+        if self.datasetName in ["eukloc"]:
+            self.dataset = EuklocDataset(path, transform=T.NormalizeFeatures())
 
 
         self.data = self.dataset[0].to(device)

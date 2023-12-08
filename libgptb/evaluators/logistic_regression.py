@@ -2,7 +2,9 @@ import torch
 from tqdm import tqdm
 from torch import nn
 from torch.optim import Adam
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score,classification_report
+from sklearn.preprocessing import MultiLabelBinarizer
+import numpy as np
 
 from libgptb.evaluators.base_evaluator import BaseEvaluator
 
@@ -30,17 +32,20 @@ class LREvaluator(BaseEvaluator):
         device = x.device
         x = x.detach().to(device)
         input_dim = x.size()[1]
+        print(input_dim)
         y = y.to(device)
-        num_classes = y.max().item() + 1
-        classifier = LogisticRegression(input_dim, num_classes).to(device)
+        num_classes = len(y[0])#y.max().item() + 1
+        print(f'num_classes {num_classes}')
+        classifier = LogisticRegression(input_dim, int(num_classes)).to(device)
         optimizer = Adam(classifier.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
-        output_fn = nn.LogSoftmax(dim=-1)
-        criterion = nn.NLLLoss()
+        output_fn = nn.Sigmoid()
+        criterion = nn.BCELoss() #nn.NLLLoss() #
 
         best_val_micro = 0
         best_test_micro = 0
         best_test_macro = 0
         best_epoch = 0
+        report = ''
 
         with tqdm(total=self.num_epochs, desc='(LR)',
                   bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}{postfix}]') as pbar:
@@ -57,24 +62,62 @@ class LREvaluator(BaseEvaluator):
                 if (epoch + 1) % self.test_interval == 0:
                     classifier.eval()
                     y_test = y[split['test']].detach().cpu().numpy()
-                    y_pred = classifier(x[split['test']]).argmax(-1).detach().cpu().numpy()
-                    test_micro = f1_score(y_test, y_pred, average='micro')
-                    test_macro = f1_score(y_test, y_pred, average='macro')
+                    y_pred = (classifier(x[split['test']])).detach().cpu().numpy()
+                    
+                    test_micro,test_macro = f1_loss(y_test,y_pred)
+                    # test_macro = f1_score(y_test, pred_transformed,average='macro')
 
                     y_val = y[split['valid']].detach().cpu().numpy()
-                    y_pred = classifier(x[split['valid']]).argmax(-1).detach().cpu().numpy()
-                    val_micro = f1_score(y_val, y_pred, average='micro')
+                    y_pred = (classifier(x[split['valid']])).detach().cpu().numpy()
+                    
+                    val_micro, val_macro = f1_loss(y_val,y_pred)
 
                     if val_micro > best_val_micro:
                         best_val_micro = val_micro
                         best_test_micro = test_micro
                         best_test_macro = test_macro
                         best_epoch = epoch
+                        # print('best_test_results')
+                        y_pred = (classifier(x[split['test']])).detach().cpu().numpy()
+                        # print(classification_report(y_test, y_pred))
+                        pred_sorted = np.argsort(y_pred, axis=1)
+
+                        # the true number of labels for each node
+                        num_labels = np.sum(y_test, axis=1)
+                        # we take the best k label predictions for all nodes, where k is the true number of labels
+                        pred_reshaped = []
+                        for pr, num in zip(pred_sorted, num_labels):
+                            pred_reshaped.append(pr[-int(num):].tolist())
+
+                        # convert back to binary vectors
+                        pred_transformed = MultiLabelBinarizer(classes=range(num_classes)).fit_transform(pred_reshaped)
+                        report = classification_report(y_test, pred_transformed)
 
                     pbar.set_postfix({'best test F1Mi': best_test_micro, 'F1Ma': best_test_macro})
                     pbar.update(self.test_interval)
-
+        print(report)
         return {
             'micro_f1': best_test_micro,
-            'macro_f1': best_test_macro
+            'macro_f1': best_test_macro,
+            'report': report
         }
+        
+def f1_loss(y, predictions):
+    #y = y.detach().cpu().numpy()
+    #predictions = predictions.detach().cpu().numpy()
+    number_of_labels = y.shape[1]
+    # find the indices (labels) with the highest probabilities (ascending order)
+    pred_sorted = np.argsort(predictions, axis=1)
+
+    # the true number of labels for each node
+    num_labels = np.sum(y, axis=1)
+    # we take the best k label predictions for all nodes, where k is the true number of labels
+    pred_reshaped = []
+    for pr, num in zip(pred_sorted, num_labels):
+        pred_reshaped.append(pr[-int(num):].tolist())
+
+    # convert back to binary vectors
+    pred_transformed = MultiLabelBinarizer(classes=range(number_of_labels)).fit_transform(pred_reshaped)
+    f1_micro = f1_score(y, pred_transformed, average='micro')
+    f1_macro = f1_score(y, pred_transformed, average='macro')
+    return f1_micro, f1_macro

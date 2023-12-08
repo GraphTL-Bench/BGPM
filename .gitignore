@@ -3,6 +3,9 @@ __pycache__/
 .idea/
 /.vscode
 /raw_data/*
+!/raw_data/pcg*
+!/raw_data/EukaryoteGo
+!/raw_data/HumanGo
 /visualized_data/*
 /libgptb/tmp/*
 /libgptb/cache/*
