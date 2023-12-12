@@ -2,12 +2,16 @@ import importlib
 import numpy as np
 from torch.utils.data import DataLoader
 import copy
-
+import os.path as osp
 import os
 import numpy as np
 import torch
 import dgl
 from dgl.data import DGLDataset
+from libgptb.data.utils import HumlocDataset as PyGHumloc
+from libgptb.data.utils import EuklocDataset as PyGEukloc
+from libgptb.data.utils import PcgDataset as PyGPcg
+from torch_geometric.utils import to_networkx
 
 
 
@@ -31,6 +35,18 @@ def get_dataset(config):
         except AttributeError:
             raise AttributeError('dataset_class is not found')
 
+def to_bidirected(graph):
+    num_nodes = graph.num_nodes()
+    
+    graph = graph.remove_self_loop()
+    src, dst = graph.edges()
+    
+    new_src = torch.cat([src, dst])
+    new_dst = torch.cat([dst, src])
+    
+    new_graph = dgl.graph((new_src, new_dst), num_nodes = num_nodes)
+    
+    return new_graph
 
 def load_pcg(data_name, split_name, train_percent, path="raw_data/"):
     print('Loading dataset ' + data_name + '.csv...')
@@ -160,19 +176,36 @@ class EuklocDataset(DGLDataset):
 
 
     def process(self):
-        features, edge_index, edge_weight, y, train_mask, val_mask, test_mask = load_eukloc()
+        path = osp.join(os.getcwd(), 'raw_data')
+        pyg_dataset = PyGEukloc(path)
+        pyg_data = pyg_dataset[0]
 
-        g = dgl.graph((edge_index[0], edge_index[1]),num_nodes=features.shape[0])
-        print("Features shape:", features.shape)
-        print("Number of nodes:", g.number_of_nodes())
-        g.ndata['feat'] = features
-        g.edata['weight'] = edge_weight
-        g.ndata['label'] = y
-        g.ndata['train_mask'] = train_mask
-        g.ndata['val_mask'] = val_mask
-        g.ndata['test_mask'] = test_mask
+        # Convert to DGL graph
+        g = dgl.from_networkx(to_networkx(pyg_data,to_undirected=True))
+
+        # Set node features and labels
+        g.ndata['feat'] = pyg_data.x
+        g.ndata['label'] = pyg_data.y
+
+        # Set edge features
+        # g.edata['edge_attr'] = pyg_data.edge_attr
 
         self.data = g
+        # features, edge_index, edge_weight, y, train_mask, val_mask, test_mask = load_eukloc()
+
+        # g = dgl.graph((edge_index[0], edge_index[1]),num_nodes=features.shape[0])
+        # print("Features shape:", features.shape)
+        # print("Number of nodes:", g.number_of_nodes())
+        # g = to_bidirected(g)
+        # g.ndata['feat'] = features
+        # #g.edata['weight'] = edge_weight
+        # g.ndata['label'] = y
+        # g.ndata['train_mask'] = train_mask
+        # g.ndata['val_mask'] = val_mask
+        # g.ndata['test_mask'] = test_mask
+        
+
+        # self.data = g
         self.save()
 
     def __getitem__(self, idx):
@@ -191,20 +224,36 @@ class HumlocDataset(DGLDataset):
 
 
     def process(self):
-        features, edge_index, edge_weight, y, train_mask, val_mask, test_mask = load_humloc()
+        path = osp.join(os.getcwd(), 'raw_data')
+        pyg_dataset = PyGHumloc(path)
+        pyg_data = pyg_dataset[0]
 
-        g = dgl.graph((edge_index[0], edge_index[1]),num_nodes=features.shape[0])
-        print("Features shape:", features.shape)
-        print("Number of nodes:", g.number_of_nodes())
-        g.ndata['feat'] = features
-        g.edata['weight'] = edge_weight
-        g.ndata['label'] = y
-        g.ndata['train_mask'] = train_mask
-        g.ndata['val_mask'] = val_mask
-        g.ndata['test_mask'] = test_mask
+        # Convert to DGL graph
+        g = dgl.from_networkx(to_networkx(pyg_data,to_undirected=True))
+
+        # Set node features and labels
+        g.ndata['feat'] = pyg_data.x
+        g.ndata['label'] = pyg_data.y
+
+        # Set edge features
+        # g.edata['edge_attr'] = pyg_data.edge_attr
 
         self.data = g
-        self.save()
+        # features, edge_index, edge_weight, y, train_mask, val_mask, test_mask = load_humloc()
+
+        # g = dgl.graph((edge_index[0], edge_index[1]),num_nodes=features.shape[0])
+        # print("Features shape:", features.shape)
+        # print("Number of nodes:", g.number_of_nodes())
+        # g = to_bidirected(g)
+        # g.ndata['feat'] = features
+        # #g.edata['weight'] = edge_weight
+        # g.ndata['label'] = y
+        # g.ndata['train_mask'] = train_mask
+        # g.ndata['val_mask'] = val_mask
+        # g.ndata['test_mask'] = test_mask
+
+        # self.data = g
+        # self.save()
 
     def __getitem__(self, idx):
         return self.data
@@ -222,19 +271,35 @@ class PcgDataset(DGLDataset):
 
 
     def process(self):
-        features, edge_index, edge_weight, y, train_mask, val_mask, test_mask = load_pcg('pcg_removed_isolated_nodes','split_0.pt',0.6)
+        path = osp.join(os.getcwd(), 'raw_data')
+        pyg_dataset = PyGPcg(path)
+        pyg_data = pyg_dataset[0]
 
-        g = dgl.graph((edge_index[0], edge_index[1]),num_nodes=features.shape[0])
-        print("Features shape:", features.shape)
-        print("Number of nodes:", g.number_of_nodes())
-        g.ndata['feat'] = features
-        g.edata['weight'] = edge_weight
-        g.ndata['label'] = y
-        g.ndata['train_mask'] = train_mask
-        g.ndata['val_mask'] = val_mask
-        g.ndata['test_mask'] = test_mask
+        # Convert to DGL graph
+        g = dgl.from_networkx(to_networkx(pyg_data,to_undirected=True))
+
+        # Set node features and labels
+        g.ndata['feat'] = pyg_data.x
+        g.ndata['label'] = pyg_data.y
+
+        # Set edge features
+        # g.edata['edge_attr'] = pyg_data.edge_attr
 
         self.data = g
+        # features, edge_index, edge_weight, y, train_mask, val_mask, test_mask = load_pcg('pcg_removed_isolated_nodes','split_0.pt',0.6)
+
+        # g = dgl.graph((edge_index[0], edge_index[1]),num_nodes=features.shape[0])
+        # print("Features shape:", features.shape)
+        # print("Number of nodes:", g.number_of_nodes())
+        # g = to_bidirected(g)
+        # g.ndata['feat'] = features
+        # #g.edata['weight'] = edge_weight
+        # g.ndata['label'] = y
+        # g.ndata['train_mask'] = train_mask
+        # g.ndata['val_mask'] = val_mask
+        # g.ndata['test_mask'] = test_mask
+
+        # self.data = g
         self.save()
 
     def __getitem__(self, idx):
