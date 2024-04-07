@@ -26,6 +26,8 @@ class PyGDataset(AbstractDataset):
             pyg = getattr(importlib.import_module('torch_geometric.datasets'), 'Amazon')
         if self.datasetName in ["CS", "Physics"]:
             pyg = getattr(importlib.import_module('torch_geometric.datasets'), 'Coauthor')
+        if self.datasetName in ["DBLP"]:
+            pyg = getattr(importlib.import_module('torch_geometric.datasets'), 'CitationFull')
         self.dataset = pyg(path, name=self.datasetName, transform=T.NormalizeFeatures())
         self.data = self.dataset[0].to(device)
         

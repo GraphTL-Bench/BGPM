@@ -6,6 +6,7 @@ import numpy as np
 import datetime
 from logging import getLogger
 from libgptb.data.dataset.abstract_dataset import AbstractDataset
+from libgptb.data.dataset.dblp_dataset import DBLPDataset
 import importlib
 import dgl
 
@@ -30,7 +31,12 @@ class DGLDataset(AbstractDataset):
                 dgl = getattr(importlib.import_module('dgl.data'), f'AmazonCoBuy{self.datasetName}Dataset')
         if self.datasetName in ["CS", "Physics"]:
             dgl = getattr(importlib.import_module('dgl.data'), f'Coauthor{self.datasetName}Dataset')
-        self.dataset = dgl(path)
+        if self.datasetName in ["DBLP"]:
+            dataset_name = str(self.datasetName)
+            dgl = DBLPDataset(root=path, name=dataset_name)
+            self.dataset = dgl
+        else:
+            self.dataset = dgl(path)
         
         self.data = self.dataset[0]
     
