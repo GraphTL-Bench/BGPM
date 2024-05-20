@@ -10,6 +10,7 @@ from libgptb.model.COSTA import COSTA
 from libgptb.model.HomoGCL import HomoGCL
 from libgptb.model.MVGRLG import MVGRLG
 from libgptb.model.InfoGraph import InfoGraph
+from libgptb.model.GraphCL import GraphCL
 
 
 
@@ -25,5 +26,6 @@ __all__ = [
     COSTA,
     HomoGCL,
     MVGRLG,
-    InfoGraph
+    InfoGraph,
+    GraphCL
 ]
