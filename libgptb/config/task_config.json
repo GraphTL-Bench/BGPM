@@ -52,5 +52,19 @@
             "executor": "HomoGCLExecutor",
             "evaluator": "HomoGCLEvaluator"
         }
+    },
+    "GCLGC": {
+        "allowed_model": ["MVGRLG","InfoGraph"],
+        "allowed_dataset": ["NCI1","PROTEINS","MUTAG","PTC_MR"],
+        "MVGRLG": {
+            "dataset_class": "PyGGCDataset",
+            "executor": "MVGRLGExecutor",
+            "evaluator": "MVGRLEvaluator"
+        },
+        "InfoGraph": {
+            "dataset_class": "PyGGCDataset",
+            "executor": "InfoGraphExecutor",
+            "evaluator": "MVGRLEvaluator"
+        }
     }
 }

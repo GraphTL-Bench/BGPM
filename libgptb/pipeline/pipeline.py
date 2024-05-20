@@ -37,16 +37,24 @@ def run_model(task=None, model_name=None, dataset_name=None, config_file=None,
     seed = config.get('seed', 0)
     set_random_seed(seed)
     # load dataset
-    print(config.config)
+    # print(config.config)
     dataset = get_dataset(config)
     # transform the dataset and split
-    data = dataset.get_data()
-    # train_data, valid_data, test_data = data
-    train_data = data
-    valid_data = data
-    test_data = data
-  
-    data_feature = dataset.get_data_feature()
+    if config['task'] == 'GCL':
+        data = dataset.get_data()
+        # train_data, valid_data, test_data = data
+        train_data = data
+        valid_data = data
+        test_data = data
+    
+        data_feature = dataset.get_data_feature()
+    
+    if config['task'] == 'GCLGC':
+        data = dataset.get_data()
+        train_data = data
+        valid_data = data
+        test_data = data
+        data_feature = dataset.get_data_feature()
     # load executor
     model_cache_file = './libgptb/cache/{}/model_cache/{}_{}.m'.format(
         exp_id, model_name, dataset_name)

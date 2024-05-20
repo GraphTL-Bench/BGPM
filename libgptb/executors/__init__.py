@@ -7,7 +7,9 @@ from libgptb.executors.GBT_executor import GBTExecutor
 # from libgptb.executors.GRACE_executor import GRACEExecutor
 from libgptb.executors.MVGRL_executor import MVGRLExecutor
 from libgptb.executors.COSTA_executor import COSTAExecutor
-# from libgptb.executors.HomoGCL_executor import HomoGCLExecutor
+from libgptb.executors.HomoGCL_executor import HomoGCLExecutor
+#from libgptb.executors.MVGRLG_executor import MVGRLGExecutor
+from libgptb.executors.InfoGraph_executor import InfoGraphExecutor
 
 
 __all__ = [
@@ -16,6 +18,8 @@ __all__ = [
     "BGRLExecutor",
     "GBTExecutor",
     "MVGRLExecutor",
-    "COSTAExecutor"
+    "COSTAExecutor",
+    "MVGRLGExecutor",
+    "InfoGraphExecutor"
 
 ]

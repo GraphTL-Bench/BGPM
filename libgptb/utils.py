@@ -49,6 +49,12 @@ def get_model(config, data_feature):
                            config['model'])(config, data_feature)
         except AttributeError:
             raise AttributeError('model is not found')
+    if config['task'] == 'GCLGC':
+        try:
+            return getattr(importlib.import_module('libgptb.model'),
+                           config['model'])(config, data_feature)
+        except AttributeError:
+            raise AttributeError('model is not found')
     else:
         raise AttributeError('task is not found')
 
