@@ -35,14 +35,13 @@ class GraphMAEExecutor(AbstractExecutor):
         self.device = self.config.get('device', torch.device('cpu'))
         
         self.dataset_name = config['dataset']
-        self.epochs = config['max_epoch']
+        self.epochs = config['num_epochs']
         self.evaluate_res_dir = './libgptb/cache/{}/evaluate_cache'.format(self.exp_id)
         self.epochs_f =config['max_epoch_f']
         self.num_hidden = config['nhid']
         self.num_layers = config['num_layers']
         self.encoder_type = config['encoder']
         self.decoder_type = config['decoder']
-        self.optim_type = config['optimizer'] 
         self.loss_fn = config['loss_fn']
         self.learner = self.config.get('learner', 'adam')
         self.learning_rate = config['learning_rate']

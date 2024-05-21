@@ -71,12 +71,17 @@ class GraphCL(AbstractGCLModel):
         self.prior = config.get('prior',0)
         self.hidden_dim=config.get("hidden_dim",32)
         self.num_features=data_feature.get("num_features",1)
+        self.tau = config.get('tau', 0.5)
+        self.drop_edge_rate = config.get('drop_edge_rate')
+        self.drop_feature_rate = config.get('drop_feature_rate')
+        self.drop_node_rate = config.get('drop_node_rate')
+        
         super().__init__(config, data_feature)
         aug1 = A.Identity()
-        aug2 = A.RandomChoice([A.RWSampling(num_seeds=1000, walk_length=10),
-                            A.NodeDropping(pn=0.1),
-                            A.FeatureMasking(pf=0.1),
-                            A.EdgeRemoving(pe=0.1)], 1)
+        aug2 = A.RandomChoice([
+                            A.NodeDropping(pn=self.drop_node_rate),
+                            A.FeatureMasking(pf=self.drop_feature_rate),
+                            A.EdgeRemoving(pe=self.drop_edge_rate)], 1) # A.RWSampling(num_seeds=1000, walk_length=10),
         gconv = GConv(input_dim=self.input_dim, hidden_dim=self.hidden_dim, num_layers=self.num_layers).to(self.device)
         self.encoder_model = Encoder(encoder=gconv, augmentor=(aug1, aug2)).to(self.device)
-        self.contrast_model = DualBranchContrast(loss=L.InfoNCE(tau=0.2), mode='G2G').to(self.device)
+        self.contrast_model = DualBranchContrast(loss=L.InfoNCE(tau=self.tau), mode='G2G').to(self.device)
