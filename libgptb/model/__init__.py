@@ -11,6 +11,7 @@ from libgptb.model.COSTA import COSTA
 from libgptb.model.MVGRLG import MVGRLG
 from libgptb.model.InfoGraph import InfoGraph
 from libgptb.model.GraphCL import GraphCL
+from libgptb.model.GraphMAE import GraphMAE
 
 
 
@@ -23,5 +24,6 @@ __all__ = [
     COSTA,
     MVGRLG,
     InfoGraph,
-    GraphCL
+    GraphCL,
+    GraphMAE
 ]
