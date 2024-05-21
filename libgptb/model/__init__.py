@@ -11,6 +11,7 @@ from libgptb.model.HomoGCL import HomoGCL
 from libgptb.model.MVGRLG import MVGRLG
 from libgptb.model.InfoGraph import InfoGraph
 from libgptb.model.GraphCL import GraphCL
+from libgptb.model.GraphMAE import GraphMAE
 
 
 
@@ -27,5 +28,6 @@ __all__ = [
     HomoGCL,
     MVGRLG,
     InfoGraph,
-    GraphCL
+    GraphCL,
+    GraphMAE
 ]

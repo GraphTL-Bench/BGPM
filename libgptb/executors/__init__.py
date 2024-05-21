@@ -11,6 +11,7 @@ from libgptb.executors.HomoGCL_executor import HomoGCLExecutor
 from libgptb.executors.MVGRLG_executor import MVGRLGExecutor
 from libgptb.executors.InfoGraph_executor import InfoGraphExecutor
 from libgptb.executors.GraphCL_executor import GraphCLExecutor
+from libgptb.executors.GraphMAE_executor import GraphMAEExecutor
 
 
 __all__ = [
@@ -26,5 +27,6 @@ __all__ = [
     "HomoGCLExecutor",
     "MVGRLGExecutor",
     "InfoGraphExecutor",
-    "GraphCLExecutor"
+    "GraphCLExecutor",
+    "GraphMAEExecutor"
 ]

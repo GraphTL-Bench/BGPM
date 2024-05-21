@@ -219,7 +219,7 @@ class GraphCLExecutor(AbstractExecutor):
                 x = torch.cat(x, dim=0)
                 y = torch.cat(y, dim=0)
 
-                split = get_split(num_samples=x.size()[0], train_ratio=0.8, test_ratio=0.1,dataset=self.dataset)
+                split = get_split(num_samples=x.size()[0], train_ratio=0.8, test_ratio=0.1,dataset=self.config['dataset'])
                 result = SVMEvaluator(linear=True)(x, y, split)
                 self._logger.info(f'(E): Best test F1Mi={result["micro_f1"]:.4f}, F1Ma={result["macro_f1"]:.4f}')
                     
