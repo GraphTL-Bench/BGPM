@@ -4,7 +4,7 @@
   "drop_feature_rate": 0.3,
   "nhid": 256,
   "pnhid": 128,
-  "num_epochs": 10000,
+  "num_epochs": 100,
   "drop_edge_rate1": 0.5,
   "drop_edge_rate2": 0.7,
   "drop_feature_rate1": 0.3,

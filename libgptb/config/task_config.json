@@ -72,7 +72,7 @@
             "evaluator": "MVGRLEvaluator"
         },
         "GraphMAE": {
-            "dataset_class": "PyGGCDataset",
+            "dataset_class": "MAEDataset",
             "executor": "GraphMAEExecutor",
             "evaluator": "MVGRLEvaluator"
         }
